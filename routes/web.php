@@ -1,0 +1,37 @@
+<?php
+
+use App\Http\Controllers\ProfileController;
+use Illuminate\Foundation\Application;
+use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
+
+use App\Http\Controllers\BoardController;
+
+Route::get('/', function () {
+    return redirect()->route('board.index');
+});
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/board', [BoardController::class, 'index'])->name('board.index');
+    Route::get('/dashboard', function () {
+        return redirect()->route('board.index');
+    })->name('dashboard');
+
+    Route::post('/cards', [BoardController::class, 'storeCard'])->name('cards.store');
+    Route::put('/cards/{card}', [BoardController::class, 'updateCard'])->name('cards.update');
+    Route::delete('/cards/{card}', [BoardController::class, 'destroyCard'])->name('cards.destroy');
+    Route::post('/cards/reorder', [BoardController::class, 'reorderCards'])->name('cards.reorder');
+
+    Route::post('/cards/{card}/subtasks', [BoardController::class, 'storeSubtask'])->name('subtasks.store');
+    Route::patch('/subtasks/{subtask}/toggle', [BoardController::class, 'toggleSubtask'])->name('subtasks.toggle');
+    Route::delete('/subtasks/{subtask}', [BoardController::class, 'destroySubtask'])->name('subtasks.destroy');
+
+    Route::post('/boards/{board}/columns', [BoardController::class, 'storeColumn'])->name('columns.store');
+    Route::delete('/columns/{column}', [BoardController::class, 'destroyColumn'])->name('columns.destroy');
+
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+});
+
+require __DIR__.'/auth.php';

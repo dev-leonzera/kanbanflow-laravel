@@ -1,0 +1,232 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Board;
+use App\Models\Card;
+use App\Models\Column;
+use App\Models\Subtask;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Inertia\Inertia;
+use Inertia\Response;
+
+class BoardController extends Controller
+{
+    public function index(Request $request): Response
+    {
+        $user = $request->user();
+
+        $board = Board::with([
+            'columns.cards.subtasks',
+            'columns.cards.labels',
+            'labels',
+        ])
+        ->where('user_id', $user->id)
+        ->first();
+
+        if (!$board) {
+            $board = Board::create([
+                'user_id' => $user->id,
+                'title' => 'Meu Primeiro Quadro',
+                'description' => 'Quadro inicial de tarefas',
+                'color_theme' => 'slate',
+            ]);
+
+            $col1 = Column::create(['board_id' => $board->id, 'title' => 'A Fazer', 'color' => '#64748b', 'order_position' => 0]);
+            $col2 = Column::create(['board_id' => $board->id, 'title' => 'Em Progresso', 'color' => '#f59e0b', 'order_position' => 1]);
+            $col3 = Column::create(['board_id' => $board->id, 'title' => 'Concluído', 'color' => '#10b981', 'order_position' => 2]);
+
+            $board->load(['columns.cards.subtasks', 'columns.cards.labels', 'labels']);
+        }
+
+        return Inertia::render('Board/Index', [
+            'board' => $board,
+        ]);
+    }
+
+    public function storeCard(Request $request)
+    {
+        $validated = $request->validate([
+            'column_id' => 'required|exists:columns,id',
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'priority' => 'nullable|in:low,medium,high,urgent',
+            'due_date' => 'nullable|date',
+            'estimate_minutes' => 'nullable|integer|min:0',
+            'label_ids' => 'nullable|array',
+            'label_ids.*' => 'exists:labels,id',
+        ]);
+
+        $column = Column::with('board')->findOrFail($validated['column_id']);
+        if ($column->board->user_id !== $request->user()->id) {
+            abort(403);
+        }
+
+        $highestOrder = Card::where('column_id', $column->id)->max('order_position') ?? -1;
+
+        $card = Card::create([
+            'column_id' => $column->id,
+            'title' => $validated['title'],
+            'description' => $validated['description'] ?? null,
+            'priority' => $validated['priority'] ?? 'medium',
+            'due_date' => $validated['due_date'] ?? null,
+            'estimate_minutes' => $validated['estimate_minutes'] ?? null,
+            'order_position' => $highestOrder + 1,
+        ]);
+
+        if (!empty($validated['label_ids'])) {
+            $card->labels()->sync($validated['label_ids']);
+        }
+
+        return redirect()->back();
+    }
+
+    public function updateCard(Request $request, Card $card)
+    {
+        $card->load('column.board');
+        if ($card->column->board->user_id !== $request->user()->id) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'title' => 'sometimes|required|string|max:255',
+            'description' => 'nullable|string',
+            'priority' => 'nullable|in:low,medium,high,urgent',
+            'due_date' => 'nullable|date',
+            'estimate_minutes' => 'nullable|integer|min:0',
+            'label_ids' => 'nullable|array',
+            'label_ids.*' => 'exists:labels,id',
+        ]);
+
+        $card->update($validated);
+
+        if ($request->has('label_ids')) {
+            $card->labels()->sync($request->input('label_ids', []));
+        }
+
+        return redirect()->back();
+    }
+
+    public function destroyCard(Request $request, Card $card)
+    {
+        $card->load('column.board');
+        if ($card->column->board->user_id !== $request->user()->id) {
+            abort(403);
+        }
+
+        $card->delete();
+
+        return redirect()->back();
+    }
+
+    public function reorderCards(Request $request)
+    {
+        $validated = $request->validate([
+            'column_id' => 'required|exists:columns,id',
+            'card_orders' => 'required|array',
+            'card_orders.*.id' => 'required|exists:cards,id',
+            'card_orders.*.order_position' => 'required|integer',
+        ]);
+
+        $targetColumn = Column::with('board')->findOrFail($validated['column_id']);
+        if ($targetColumn->board->user_id !== $request->user()->id) {
+            abort(403);
+        }
+
+        DB::transaction(function () use ($validated, $targetColumn) {
+            foreach ($validated['card_orders'] as $item) {
+                Card::where('id', $item['id'])->update([
+                    'column_id' => $targetColumn->id,
+                    'order_position' => $item['order_position'],
+                ]);
+            }
+        });
+
+        return redirect()->back();
+    }
+
+    public function toggleSubtask(Request $request, Subtask $subtask)
+    {
+        $subtask->load('card.column.board');
+        if ($subtask->card->column->board->user_id !== $request->user()->id) {
+            abort(403);
+        }
+
+        $subtask->update([
+            'is_completed' => !$subtask->is_completed,
+        ]);
+
+        return redirect()->back();
+    }
+
+    public function storeSubtask(Request $request, Card $card)
+    {
+        $card->load('column.board');
+        if ($card->column->board->user_id !== $request->user()->id) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+        ]);
+
+        $maxOrder = $card->subtasks()->max('order_position') ?? -1;
+
+        $card->subtasks()->create([
+            'title' => $validated['title'],
+            'is_completed' => false,
+            'order_position' => $maxOrder + 1,
+        ]);
+
+        return redirect()->back();
+    }
+
+    public function destroySubtask(Request $request, Subtask $subtask)
+    {
+        $subtask->load('card.column.board');
+        if ($subtask->card->column->board->user_id !== $request->user()->id) {
+            abort(403);
+        }
+
+        $subtask->delete();
+
+        return redirect()->back();
+    }
+
+    public function storeColumn(Request $request, Board $board)
+    {
+        if ($board->user_id !== $request->user()->id) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'wip_limit' => 'nullable|integer|min:1',
+            'color' => 'nullable|string|max:7',
+        ]);
+
+        $maxOrder = $board->columns()->max('order_position') ?? -1;
+
+        $board->columns()->create([
+            'title' => $validated['title'],
+            'wip_limit' => $validated['wip_limit'] ?? null,
+            'color' => $validated['color'] ?? '#64748b',
+            'order_position' => $maxOrder + 1,
+        ]);
+
+        return redirect()->back();
+    }
+
+    public function destroyColumn(Request $request, Column $column)
+    {
+        $column->load('board');
+        if ($column->board->user_id !== $request->user()->id) {
+            abort(403);
+        }
+
+        $column->delete();
+
+        return redirect()->back();
+    }
+}
