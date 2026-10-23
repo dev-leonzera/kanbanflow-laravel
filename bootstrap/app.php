@@ -23,4 +23,12 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
+
+        $exceptions->dontReportDuplicates();
+
+        $exceptions->report(function (\ErrorException $e) {
+            if (str_contains($e->getMessage(), 'tempnam()')) {
+                return false;
+            }
+        });
     })->create();
