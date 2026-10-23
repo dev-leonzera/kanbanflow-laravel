@@ -25,10 +25,21 @@ export const CardModal: React.FC<CardModalProps> = ({
     const [title, setTitle] = useState(card?.title || '');
     const [description, setDescription] = useState(card?.description || '');
     const [priority, setPriority] = useState<Card['priority']>(card?.priority || 'medium');
+    const [color, setColor] = useState<string | null>(card?.color || null);
     const [dueDate, setDueDate] = useState(card?.due_date || '');
     const [estimateMinutes, setEstimateMinutes] = useState(card?.estimate_minutes ? String(card.estimate_minutes) : '');
     const [selectedLabels, setSelectedLabels] = useState<number[]>(card?.labels?.map(l => l.id) || []);
     const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
+
+    const KANBAN_COLORS = [
+        { label: 'Padrão', hex: '' },
+        { label: 'Vermelho', hex: '#ef4444' },
+        { label: 'Âmbar', hex: '#f59e0b' },
+        { label: 'Esmeralda', hex: '#10b981' },
+        { label: 'Azul Celeste', hex: '#0ea5e9' },
+        { label: 'Índigo', hex: '#6366f1' },
+        { label: 'Rosa', hex: '#ec4899' },
+    ];
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -38,6 +49,7 @@ export const CardModal: React.FC<CardModalProps> = ({
             title,
             description,
             priority,
+            color: color || null,
             due_date: dueDate || null,
             estimate_minutes: estimateMinutes ? parseInt(estimateMinutes, 10) : null,
             label_ids: selectedLabels,
@@ -175,6 +187,29 @@ export const CardModal: React.FC<CardModalProps> = ({
                                 placeholder="ex: 60"
                                 className="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-slate-500 focus:outline-none font-mono"
                             />
+                        </div>
+                    </div>
+
+                    {/* Cor de Destaque no estilo KanbanFlow */}
+                    <div>
+                        <label className="block text-xs font-medium text-slate-300 mb-1.5">Cor do Cartão</label>
+                        <div className="flex items-center gap-2">
+                            {KANBAN_COLORS.map((c) => (
+                                <button
+                                    key={c.label}
+                                    type="button"
+                                    onClick={() => setColor(c.hex || null)}
+                                    className={`w-6 h-6 rounded-xs border transition-all ${
+                                        (color === c.hex || (!color && !c.hex))
+                                            ? 'ring-2 ring-sky-400 ring-offset-2 ring-offset-slate-900 border-white scale-110'
+                                            : 'border-slate-700 hover:scale-105'
+                                    }`}
+                                    style={{
+                                        backgroundColor: c.hex || '#334155',
+                                    }}
+                                    title={c.label}
+                                />
+                            ))}
                         </div>
                     </div>
 

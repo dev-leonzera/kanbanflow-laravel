@@ -52,6 +52,7 @@ class BoardController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'priority' => 'nullable|in:low,medium,high,urgent',
+            'color' => 'nullable|string|max:7',
             'due_date' => 'nullable|date',
             'estimate_minutes' => 'nullable|integer|min:0',
             'label_ids' => 'nullable|array',
@@ -70,6 +71,7 @@ class BoardController extends Controller
             'title' => $validated['title'],
             'description' => $validated['description'] ?? null,
             'priority' => $validated['priority'] ?? 'medium',
+            'color' => $validated['color'] ?? null,
             'due_date' => $validated['due_date'] ?? null,
             'estimate_minutes' => $validated['estimate_minutes'] ?? null,
             'order_position' => $highestOrder + 1,
@@ -93,6 +95,7 @@ class BoardController extends Controller
             'title' => 'sometimes|required|string|max:255',
             'description' => 'nullable|string',
             'priority' => 'nullable|in:low,medium,high,urgent',
+            'color' => 'nullable|string|max:7',
             'due_date' => 'nullable|date',
             'estimate_minutes' => 'nullable|integer|min:0',
             'label_ids' => 'nullable|array',
@@ -142,6 +145,29 @@ class BoardController extends Controller
                 ]);
             }
         });
+
+        return redirect()->back();
+    }
+
+    public function storeTimeEntry(Request $request, Card $card)
+    {
+        $card->load('column.board');
+        if ($card->column->board->user_id !== $request->user()->id) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'duration_seconds' => 'required|integer|min:1',
+            'started_at' => 'nullable|date',
+            'ended_at' => 'nullable|date',
+        ]);
+
+        $card->timeEntries()->create([
+            'user_id' => $request->user()->id,
+            'duration_seconds' => $validated['duration_seconds'],
+            'started_at' => $validated['started_at'] ?? now()->subSeconds($validated['duration_seconds']),
+            'ended_at' => $validated['ended_at'] ?? now(),
+        ]);
 
         return redirect()->back();
     }

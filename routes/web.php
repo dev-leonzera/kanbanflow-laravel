@@ -22,6 +22,8 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/cards/{card}', [BoardController::class, 'destroyCard'])->name('cards.destroy');
     Route::post('/cards/reorder', [BoardController::class, 'reorderCards'])->name('cards.reorder');
 
+    Route::post('/cards/{card}/time-entries', [BoardController::class, 'storeTimeEntry'])->name('cards.time_entries.store');
+
     Route::post('/cards/{card}/subtasks', [BoardController::class, 'storeSubtask'])->name('subtasks.store');
     Route::patch('/subtasks/{subtask}/toggle', [BoardController::class, 'toggleSubtask'])->name('subtasks.toggle');
     Route::delete('/subtasks/{subtask}', [BoardController::class, 'destroySubtask'])->name('subtasks.destroy');

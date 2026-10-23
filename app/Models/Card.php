@@ -29,6 +29,15 @@ class Card extends Model
         'due_date' => 'date:Y-m-d',
     ];
 
+    protected $appends = [
+        'time_spent_seconds',
+    ];
+
+    public function getTimeSpentSecondsAttribute(): int
+    {
+        return (int) $this->timeEntries()->sum('duration_seconds');
+    }
+
     public function column(): BelongsTo
     {
         return $this->belongsTo(Column::class);

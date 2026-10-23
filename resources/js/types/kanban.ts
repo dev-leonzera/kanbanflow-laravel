@@ -13,6 +13,15 @@ export interface Label {
     color_hex: string;
 }
 
+export interface TimeEntry {
+    id: number;
+    card_id: number;
+    user_id: number;
+    duration_seconds: number;
+    started_at: string;
+    ended_at: string;
+}
+
 export interface Card {
     id: number;
     column_id: number;
@@ -23,6 +32,7 @@ export interface Card {
     order_position: number;
     due_date: string | null;
     estimate_minutes: number | null;
+    time_spent_seconds?: number;
     subtasks: Subtask[];
     labels: Label[];
 }

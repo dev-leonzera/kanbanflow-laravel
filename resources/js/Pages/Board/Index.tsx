@@ -4,6 +4,7 @@ import { Head, router } from '@inertiajs/react';
 import { Board, Card } from '@/types/kanban';
 import { ColumnComponent } from '@/Components/Kanban/ColumnComponent';
 import { CardModal } from '@/Components/Kanban/CardModal';
+import { PomodoroTimer } from '@/Components/Kanban/PomodoroTimer';
 import { Plus, Search, Filter } from 'lucide-react';
 
 interface BoardIndexProps {
@@ -20,6 +21,12 @@ export default function Index({ board }: BoardIndexProps) {
     const [newColumnTitle, setNewColumnTitle] = useState('');
     const [newColumnWip, setNewColumnWip] = useState('');
 
+    // Cartão em foco no Pomodoro Timer
+    const [timerActiveCard, setTimerActiveCard] = useState<Card | null>(null);
+
+    // Lista plana de todos os cartões para o seletor do Timer
+    const allCards: Card[] = board.columns?.flatMap((col) => col.cards || []) || [];
+
     const handleEditCard = (card: Card) => {
         setSelectedCard(card);
         setTargetColumnId(card.column_id);
@@ -30,6 +37,10 @@ export default function Index({ board }: BoardIndexProps) {
         setSelectedCard(null);
         setTargetColumnId(columnId);
         setIsCardModalOpen(true);
+    };
+
+    const handleStartTimerForCard = (card: Card) => {
+        setTimerActiveCard(card);
     };
 
     const handleCreateColumn = (e: React.FormEvent) => {
@@ -65,14 +76,25 @@ export default function Index({ board }: BoardIndexProps) {
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div>
-                        <h2 className="text-lg font-semibold leading-tight text-slate-100 flex items-center gap-2">
-                            {board.title}
-                        </h2>
-                        {board.description && (
-                            <p className="text-xs text-slate-400 mt-0.5">{board.description}</p>
-                        )}
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                        <div>
+                            <h2 className="text-lg font-bold leading-tight text-slate-100 flex items-center gap-2">
+                                {board.title}
+                            </h2>
+                            {board.description && (
+                                <p className="text-xs text-slate-400 mt-0.5">{board.description}</p>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Centro: Widget Pomodoro Timer */}
+                    <div className="flex items-center">
+                        <PomodoroTimer
+                            cards={allCards}
+                            selectedCard={timerActiveCard}
+                            onSelectCard={setTimerActiveCard}
+                        />
                     </div>
 
                     {/* Barra de Filtros e Busca Rápida */}
@@ -113,8 +135,10 @@ export default function Index({ board }: BoardIndexProps) {
                     <ColumnComponent
                         key={column.id}
                         column={column}
+                        activeTimerCardId={timerActiveCard?.id}
                         onEditCard={handleEditCard}
                         onAddCard={handleAddCard}
+                        onStartTimer={handleStartTimerForCard}
                     />
                 ))}
 
