@@ -18,9 +18,12 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): Response
     {
+        $boards = \App\Models\Board::where('user_id', $request->user()->id)->get();
+
         return Inertia::render('Profile/Edit', [
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
             'status' => session('status'),
+            'boards' => $boards,
         ]);
     }
 

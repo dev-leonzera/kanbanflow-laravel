@@ -6,6 +6,7 @@ import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
 import { useForm } from '@inertiajs/react';
 import { FormEventHandler, useRef, useState } from 'react';
+import { Trash2, AlertTriangle, KeyRound } from 'lucide-react';
 
 export default function DeleteUserForm({
     className = '',
@@ -50,71 +51,80 @@ export default function DeleteUserForm({
     };
 
     return (
-        <section className={`space-y-6 ${className}`}>
-            <header>
-                <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                    Delete Account
-                </h2>
-
-                <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                    Once your account is deleted, all of its resources and data
-                    will be permanently deleted. Before deleting your account,
-                    please download any data or information that you wish to
-                    retain.
+        <section className={`space-y-4 ${className}`}>
+            <div className="max-w-xl">
+                <p className="text-xs text-slate-400 leading-relaxed">
+                    Depois que sua conta for excluída, todos os recursos, quadros e dados associados a ela serão apagados permanentemente. Antes de excluir, certifique-se de salvar ou exportar quaisquer informações importantes que deseje manter.
                 </p>
-            </header>
+            </div>
 
-            <DangerButton onClick={confirmUserDeletion}>
-                Delete Account
-            </DangerButton>
+            <div className="pt-2">
+                <DangerButton onClick={confirmUserDeletion} className="gap-2">
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Excluir Conta Definitivamente
+                </DangerButton>
+            </div>
 
-            <Modal show={confirmingUserDeletion} onClose={closeModal}>
+            <Modal show={confirmingUserDeletion} onClose={closeModal} maxWidth="md">
                 <form onSubmit={deleteUser} className="p-6">
-                    <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                        Are you sure you want to delete your account?
-                    </h2>
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400">
+                            <AlertTriangle className="h-5 w-5" />
+                        </div>
+                        <div>
+                            <h2 className="text-sm font-semibold text-slate-100">
+                                Deseja realmente excluir sua conta?
+                            </h2>
+                            <p className="text-xs text-slate-400">
+                                Esta ação é permanente e irreversível.
+                            </p>
+                        </div>
+                    </div>
 
-                    <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                        Once your account is deleted, all of its resources and
-                        data will be permanently deleted. Please enter your
-                        password to confirm you would like to permanently delete
-                        your account.
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                        Todos os seus quadros de tarefas, colunas e configurações serão apagados. Por favor, digite sua senha atual para confirmar a exclusão.
                     </p>
 
-                    <div className="mt-6">
+                    <div className="mt-4">
                         <InputLabel
                             htmlFor="password"
-                            value="Password"
+                            value="Sua Senha"
                             className="sr-only"
                         />
 
-                        <TextInput
-                            id="password"
-                            type="password"
-                            name="password"
-                            ref={passwordInput}
-                            value={data.password}
-                            onChange={(e) =>
-                                setData('password', e.target.value)
-                            }
-                            className="mt-1 block w-3/4"
-                            isFocused
-                            placeholder="Password"
-                        />
+                        <div className="relative">
+                            <TextInput
+                                id="password"
+                                type="password"
+                                name="password"
+                                ref={passwordInput}
+                                value={data.password}
+                                onChange={(e) =>
+                                    setData('password', e.target.value)
+                                }
+                                className="w-full pl-9"
+                                isFocused
+                                placeholder="Digite sua senha para confirmar"
+                            />
+                            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                                <KeyRound className="h-4 w-4 text-slate-500" />
+                            </div>
+                        </div>
 
                         <InputError
                             message={errors.password}
-                            className="mt-2"
+                            className="mt-1.5"
                         />
                     </div>
 
-                    <div className="mt-6 flex justify-end">
+                    <div className="mt-6 flex justify-end gap-3 pt-3 border-t border-slate-800">
                         <SecondaryButton onClick={closeModal}>
-                            Cancel
+                            Cancelar
                         </SecondaryButton>
 
-                        <DangerButton className="ms-3" disabled={processing}>
-                            Delete Account
+                        <DangerButton disabled={processing} className="gap-2">
+                            <Trash2 className="w-3.5 h-3.5" />
+                            {processing ? 'Excluindo...' : 'Sim, Excluir Minha Conta'}
                         </DangerButton>
                     </div>
                 </form>
