@@ -9,9 +9,10 @@ import { Plus, Search, Filter } from 'lucide-react';
 
 interface BoardIndexProps {
     board: Board;
+    boards?: Board[];
 }
 
-export default function Index({ board }: BoardIndexProps) {
+export default function Index({ board, boards = [] }: BoardIndexProps) {
     const [selectedCard, setSelectedCard] = useState<Card | null>(null);
     const [isCardModalOpen, setIsCardModalOpen] = useState(false);
     const [targetColumnId, setTargetColumnId] = useState<number | undefined>(undefined);
@@ -75,6 +76,8 @@ export default function Index({ board }: BoardIndexProps) {
 
     return (
         <AuthenticatedLayout
+            boards={boards}
+            currentBoard={board}
             header={
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                     <div className="flex items-center gap-4">

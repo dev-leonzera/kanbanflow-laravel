@@ -16,32 +16,42 @@ class BoardController extends Controller
     public function index(Request $request): Response
     {
         $user = $request->user();
+        $boardId = $request->query('board_id');
 
-        $board = Board::with([
-            'columns.cards.subtasks',
-            'columns.cards.labels',
-            'labels',
-        ])
-        ->where('user_id', $user->id)
-        ->first();
+        $boards = Board::where('user_id', $user->id)->get();
 
-        if (!$board) {
-            $board = Board::create([
+        if ($boards->isEmpty()) {
+            $initialBoard = Board::create([
                 'user_id' => $user->id,
                 'title' => 'Meu Primeiro Quadro',
                 'description' => 'Quadro inicial de tarefas',
                 'color_theme' => 'slate',
             ]);
 
-            $col1 = Column::create(['board_id' => $board->id, 'title' => 'A Fazer', 'color' => '#64748b', 'order_position' => 0]);
-            $col2 = Column::create(['board_id' => $board->id, 'title' => 'Em Progresso', 'color' => '#f59e0b', 'order_position' => 1]);
-            $col3 = Column::create(['board_id' => $board->id, 'title' => 'Concluído', 'color' => '#10b981', 'order_position' => 2]);
+            Column::create(['board_id' => $initialBoard->id, 'title' => 'A Fazer', 'color' => '#64748b', 'order_position' => 0]);
+            Column::create(['board_id' => $initialBoard->id, 'title' => 'Em Progresso', 'color' => '#f59e0b', 'order_position' => 1]);
+            Column::create(['board_id' => $initialBoard->id, 'title' => 'Concluído', 'color' => '#10b981', 'order_position' => 2]);
 
-            $board->load(['columns.cards.subtasks', 'columns.cards.labels', 'labels']);
+            $boards = Board::where('user_id', $user->id)->get();
+        }
+
+        $activeBoardQuery = Board::with([
+            'columns.cards.subtasks',
+            'columns.cards.labels',
+            'labels',
+        ])->where('user_id', $user->id);
+
+        if ($boardId) {
+            $board = (clone $activeBoardQuery)->where('id', $boardId)->first();
+        }
+
+        if (empty($board)) {
+            $board = $activeBoardQuery->first();
         }
 
         return Inertia::render('Board/Index', [
             'board' => $board,
+            'boards' => $boards,
         ]);
     }
 
