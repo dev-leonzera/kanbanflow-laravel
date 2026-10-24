@@ -110,12 +110,12 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
     };
 
     return (
-        <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-md px-2.5 py-1 text-slate-200">
+        <div className="flex items-center gap-1.5 sm:gap-2 bg-slate-900 border border-slate-800 rounded-md px-2 sm:px-2.5 py-1 text-slate-200 overflow-x-auto max-w-full">
             {/* Seletor de Modo */}
-            <div className="flex items-center gap-1 border-r border-slate-800 pr-2">
+            <div className="flex items-center gap-1 border-r border-slate-800 pr-1.5 sm:pr-2 shrink-0">
                 <button
                     onClick={() => changeMode('pomodoro')}
-                    className={`px-2 py-0.5 rounded text-xs font-medium transition-colors ${
+                    className={`px-1.5 sm:px-2 py-0.5 rounded text-xs font-medium transition-colors shrink-0 ${
                         mode === 'pomodoro'
                             ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
                             : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
@@ -123,12 +123,13 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
                     title="Foco de 25 min"
                 >
                     <Flame className="w-3.5 h-3.5 inline mr-1 text-rose-500" />
-                    Pomodoro
+                    <span className="hidden sm:inline">Pomodoro</span>
+                    <span className="sm:hidden">25m</span>
                 </button>
 
                 <button
                     onClick={() => changeMode('short_break')}
-                    className={`px-2 py-0.5 rounded text-xs font-medium transition-colors ${
+                    className={`px-1.5 sm:px-2 py-0.5 rounded text-xs font-medium transition-colors shrink-0 ${
                         mode === 'short_break'
                             ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                             : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
@@ -136,12 +137,13 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
                     title="Pausa curta de 5 min"
                 >
                     <Coffee className="w-3.5 h-3.5 inline mr-1 text-emerald-400" />
-                    Pausa
+                    <span className="hidden sm:inline">Pausa</span>
+                    <span className="sm:hidden">5m</span>
                 </button>
 
                 <button
                     onClick={() => changeMode('stopwatch')}
-                    className={`px-2 py-0.5 rounded text-xs font-medium transition-colors ${
+                    className={`px-1.5 sm:px-2 py-0.5 rounded text-xs font-medium transition-colors shrink-0 ${
                         mode === 'stopwatch'
                             ? 'bg-sky-500/20 text-sky-400 border border-sky-500/30'
                             : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
@@ -149,17 +151,18 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
                     title="Cronômetro livre"
                 >
                     <Clock className="w-3.5 h-3.5 inline mr-1 text-sky-400" />
-                    Livre
+                    <span className="hidden sm:inline">Livre</span>
+                    <span className="sm:hidden">Livre</span>
                 </button>
             </div>
 
             {/* Display do Tempo */}
-            <div className="font-mono text-sm font-bold tracking-wider text-slate-100 min-w-[50px] text-center">
+            <div className="font-mono text-xs sm:text-sm font-bold tracking-wider text-slate-100 min-w-[42px] sm:min-w-[50px] text-center shrink-0">
                 {formatTime(timeLeft)}
             </div>
 
             {/* Controles Play / Pause / Reset */}
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 shrink-0">
                 <button
                     onClick={togglePlay}
                     className={`p-1 rounded-sm border transition-colors ${

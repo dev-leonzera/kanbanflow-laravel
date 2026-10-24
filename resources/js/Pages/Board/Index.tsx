@@ -92,7 +92,7 @@ export default function Index({ board, boards = [] }: BoardIndexProps) {
                     </div>
 
                     {/* Centro: Widget Pomodoro Timer */}
-                    <div className="flex items-center">
+                    <div className="w-full lg:w-auto overflow-x-auto pb-1 lg:pb-0 scrollbar-none">
                         <PomodoroTimer
                             cards={allCards}
                             selectedCard={timerActiveCard}
@@ -101,25 +101,25 @@ export default function Index({ board, boards = [] }: BoardIndexProps) {
                     </div>
 
                     {/* Barra de Filtros e Busca Rápida */}
-                    <div className="flex items-center gap-2">
-                        <div className="relative">
+                    <div className="flex items-center gap-2 w-full lg:w-auto">
+                        <div className="relative flex-1 lg:flex-none">
                             <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-2.5" />
                             <input
                                 type="text"
                                 placeholder="Filtrar tarefas..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="h-8 pl-8 pr-3 text-xs rounded-md bg-slate-900 border border-slate-700 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-slate-500 w-44 sm:w-56"
+                                className="h-8 pl-8 pr-3 text-xs rounded-md bg-slate-900 border border-slate-700 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-slate-500 w-full lg:w-56"
                             />
                         </div>
 
-                        <div className="relative">
+                        <div className="relative shrink-0">
                             <select
                                 value={priorityFilter}
                                 onChange={(e) => setPriorityFilter(e.target.value)}
                                 className="h-8 px-2 text-xs rounded-md bg-slate-900 border border-slate-700 text-slate-300 focus:outline-none focus:border-slate-500"
                             >
-                                <option value="all">Todas Prioridades</option>
+                                <option value="all">Todas</option>
                                 <option value="urgent">Urgente</option>
                                 <option value="high">Alta</option>
                                 <option value="medium">Média</option>
@@ -132,21 +132,54 @@ export default function Index({ board, boards = [] }: BoardIndexProps) {
         >
             <Head title={`Quadro: ${board.title}`} />
 
-            <div className="h-[calc(100vh-120px)] p-4 flex gap-4 overflow-x-auto select-none bg-slate-950 text-slate-100">
+            {/* Mobile Column Indicator / Quick Jump Tabs */}
+            {filteredColumns.length > 0 && (
+                <div className="flex md:hidden items-center gap-1.5 px-3 py-2 bg-slate-900/90 border-b border-slate-800/80 overflow-x-auto scrollbar-none text-xs">
+                    {filteredColumns.map((col, idx) => (
+                        <button
+                            key={col.id}
+                            type="button"
+                            onClick={() => {
+                                const el = document.getElementById(`column-${col.id}`);
+                                if (el) {
+                                    el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                                }
+                            }}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-800/80 text-slate-300 border border-slate-700/60 whitespace-nowrap active:bg-slate-700"
+                        >
+                            <span
+                                className="w-2 h-2 rounded-full shrink-0"
+                                style={{ backgroundColor: col.color || '#64748b' }}
+                            />
+                            <span className="truncate max-w-[100px]">{col.title}</span>
+                            <span className="text-[10px] text-slate-400 font-mono">
+                                ({col.cards?.length || 0})
+                            </span>
+                        </button>
+                    ))}
+                </div>
+            )}
+
+            <div className="flex-1 p-3 sm:p-4 flex gap-3 sm:gap-4 overflow-x-auto select-none bg-slate-950 text-slate-100 snap-x snap-mandatory md:snap-none scroll-smooth">
                 {/* Colunas do Kanban */}
                 {filteredColumns.map(column => (
-                    <ColumnComponent
+                    <div
                         key={column.id}
-                        column={column}
-                        activeTimerCardId={timerActiveCard?.id}
-                        onEditCard={handleEditCard}
-                        onAddCard={handleAddCard}
-                        onStartTimer={handleStartTimerForCard}
-                    />
+                        id={`column-${column.id}`}
+                        className="snap-center shrink-0 w-[84vw] sm:w-80"
+                    >
+                        <ColumnComponent
+                            column={column}
+                            activeTimerCardId={timerActiveCard?.id}
+                            onEditCard={handleEditCard}
+                            onAddCard={handleAddCard}
+                            onStartTimer={handleStartTimerForCard}
+                        />
+                    </div>
                 ))}
 
                 {/* Botão de Adicionar Nova Coluna */}
-                <div className="shrink-0 w-80">
+                <div className="snap-center shrink-0 w-[84vw] sm:w-80">
                     {isAddColumnOpen ? (
                         <form
                             onSubmit={handleCreateColumn}

@@ -34,7 +34,7 @@ export const ColumnComponent: React.FC<ColumnProps> = ({
     };
 
     return (
-        <div className="flex flex-col w-80 shrink-0 rounded-lg bg-slate-900/50 border border-slate-800/80 max-h-[calc(100vh-140px)]">
+        <div className="flex flex-col w-full rounded-lg bg-slate-900/50 border border-slate-800/80 max-h-[calc(100vh-160px)] md:max-h-[calc(100vh-140px)]">
             {/* Header da Coluna */}
             <div className="p-3 border-b border-slate-800 flex items-center justify-between">
                 <div className="flex items-center gap-2">

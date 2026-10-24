@@ -100,18 +100,18 @@ export const CardModal: React.FC<CardModalProps> = ({
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4">
-            <div className="flex flex-col w-full max-w-xl rounded-lg border border-slate-800 bg-slate-900 shadow-2xl max-h-[90vh]">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/75 backdrop-blur-xs p-0 sm:p-4">
+            <div className="flex flex-col w-full sm:max-w-xl rounded-t-xl sm:rounded-lg border border-slate-800 bg-slate-900 shadow-2xl max-h-[92vh] sm:max-h-[90vh]">
                 {/* Header */}
-                <div className="flex items-center justify-between border-b border-slate-800 p-4">
-                    <h3 className="text-base font-semibold text-slate-100">
+                <div className="flex items-center justify-between border-b border-slate-800 p-3.5 sm:p-4">
+                    <h3 className="text-sm sm:text-base font-semibold text-slate-100">
                         {isEdit ? 'Editar Cartão' : 'Novo Cartão'}
                     </h3>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
                         {isEdit && (
                             <button
                                 onClick={handleDeleteCard}
-                                className="p-1.5 rounded text-rose-400 hover:bg-rose-500/10 transition-colors"
+                                className="p-2 rounded text-rose-400 hover:bg-rose-500/10 transition-colors"
                                 title="Excluir Cartão"
                             >
                                 <Trash2 className="w-4 h-4" />
@@ -119,7 +119,7 @@ export const CardModal: React.FC<CardModalProps> = ({
                         )}
                         <button
                             onClick={onClose}
-                            className="p-1.5 rounded text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+                            className="p-2 rounded text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
                         >
                             <X className="w-4 h-4" />
                         </button>
