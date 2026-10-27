@@ -92,7 +92,7 @@ export default function Index({ board, boards = [] }: BoardIndexProps) {
                     </div>
 
                     {/* Centro: Widget Pomodoro Timer */}
-                    <div className="w-full lg:w-auto overflow-x-auto pb-1 lg:pb-0 scrollbar-none">
+                    <div className="w-full lg:w-auto pb-1 lg:pb-0">
                         <PomodoroTimer
                             cards={allCards}
                             selectedCard={timerActiveCard}

@@ -330,7 +330,7 @@ export default function Authenticated({
 
             {/* Sub-Header / ToolBar Funcional: Integrado com o mesmo tom do App */}
             {header && (
-                <div className="border-b border-slate-800/90 bg-slate-900/60 px-4 py-2 sm:px-6 lg:px-8">
+                <div className="relative z-20 border-b border-slate-800/90 bg-slate-900/60 px-4 py-2 sm:px-6 lg:px-8">
                     {header}
                 </div>
             )}
