@@ -49,9 +49,9 @@ export const CardItem: React.FC<CardItemProps> = ({
     return (
         <div
             onClick={() => onEdit(card)}
-            className={`group relative cursor-pointer rounded-md border p-3.5 transition-all duration-150 shadow-xs ${
+            className={`group relative cursor-pointer rounded-md border p-4 sm:p-4.5 transition-all duration-150 shadow-xs ${
                 isActiveInTimer
-                    ? 'border-sky-500/60 bg-sky-950/20 ring-1 ring-sky-500/30'
+                    ? 'border-sky-500/60 bg-sky-950/25 ring-1 ring-sky-500/30'
                     : 'border-slate-800 bg-slate-900/90 hover:border-slate-700 hover:bg-slate-900'
             }`}
             style={
@@ -61,16 +61,16 @@ export const CardItem: React.FC<CardItemProps> = ({
             }
         >
             {/* Header: Prioridade & Etiquetas & Botão de Timer Rápido */}
-            <div className="flex items-center justify-between gap-1.5 mb-2">
+            <div className="flex items-center justify-between gap-2 mb-2.5">
                 <div className="flex flex-wrap items-center gap-1.5">
-                    <span className={`text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded border ${priorityBadge}`}>
+                    <span className={`text-[11px] uppercase font-semibold px-2 py-0.5 rounded border ${priorityBadge}`}>
                         {card.priority}
                     </span>
 
                     {card.labels?.map((label) => (
                         <span
                             key={label.id}
-                            className="text-[10px] font-medium px-1.5 py-0.5 rounded border border-slate-700/60 text-slate-300"
+                            className="text-[11px] font-medium px-2 py-0.5 rounded border border-slate-700/60 text-slate-300"
                             style={{
                                 backgroundColor: `${label.color_hex}15`,
                                 borderColor: `${label.color_hex}40`,
@@ -84,19 +84,19 @@ export const CardItem: React.FC<CardItemProps> = ({
                 {/* Botão de foco / Pomodoro para o cartão */}
                 <button
                     onClick={handleTimerClick}
-                    className={`p-1 rounded text-xs transition-colors ${
+                    className={`p-1.5 rounded text-xs transition-colors ${
                         isActiveInTimer
                             ? 'text-sky-400 bg-sky-500/20'
                             : 'text-slate-500 hover:text-rose-400 hover:bg-slate-800'
                     }`}
                     title={isActiveInTimer ? 'Cartão em foco no timer' : 'Focar neste cartão no Pomodoro'}
                 >
-                    <Flame className="w-3.5 h-3.5" />
+                    <Flame className="w-4 h-4" />
                 </button>
             </div>
 
-            {/* Título */}
-            <h4 className="text-sm font-medium text-slate-200 leading-snug group-hover:text-white transition-colors">
+            {/* Título com maior destaque e presença visual */}
+            <h4 className="text-[15px] font-medium text-slate-100 leading-snug group-hover:text-white transition-colors">
                 {card.title}
             </h4>
 

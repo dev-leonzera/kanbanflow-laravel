@@ -55,6 +55,46 @@ class BoardController extends Controller
         ]);
     }
 
+    public function storeBoard(Request $request)
+    {
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string|max:1000',
+            'color_theme' => 'nullable|string|max:30',
+        ]);
+
+        $board = Board::create([
+            'user_id' => $request->user()->id,
+            'title' => $validated['title'],
+            'description' => $validated['description'] ?? null,
+            'color_theme' => $validated['color_theme'] ?? 'slate',
+        ]);
+
+        // Criar colunas padrão para o novo quadro/projeto
+        Column::create(['board_id' => $board->id, 'title' => 'A Fazer', 'color' => '#64748b', 'order_position' => 0]);
+        Column::create(['board_id' => $board->id, 'title' => 'Em Progresso', 'color' => '#f59e0b', 'order_position' => 1]);
+        Column::create(['board_id' => $board->id, 'title' => 'Concluído', 'color' => '#10b981', 'order_position' => 2]);
+
+        return redirect()->route('board.index', ['board_id' => $board->id]);
+    }
+
+    public function destroyBoard(Request $request, Board $board)
+    {
+        if ($board->user_id !== $request->user()->id) {
+            abort(403);
+        }
+
+        // Não permitir deletar se for o único quadro
+        $count = Board::where('user_id', $request->user()->id)->count();
+        if ($count <= 1) {
+            return redirect()->back()->with('error', 'Você precisa ter pelo menos um quadro ativo.');
+        }
+
+        $board->delete();
+
+        return redirect()->route('board.index');
+    }
+
     public function storeCard(Request $request)
     {
         $validated = $request->validate([

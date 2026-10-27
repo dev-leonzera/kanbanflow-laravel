@@ -25,15 +25,15 @@ export default function ApplicationLogo({ className = 'h-8 w-auto', ...props }: 
                 <rect x="26" y="12" width="9" height="8" rx="1.5" fill="#38bdf8" />
             </g>
 
-            {/* Tipografia da Marca: KANBAN + FLOW */}
+            {/* Tipografia da Marca: KANBAN + FLOW com respiro refinado */}
             <text
-                x="48"
+                x="54"
                 y="31"
                 fill="currentColor"
                 fontFamily="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
                 fontSize="22"
                 fontWeight="800"
-                letterSpacing="-0.5px"
+                letterSpacing="-0.3px"
             >
                 Kanban<tspan fill="#38bdf8" fontWeight="600">Flow</tspan>
             </text>

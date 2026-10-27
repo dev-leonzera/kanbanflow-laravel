@@ -13,6 +13,8 @@ Route::get('/', function () {
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/board', [BoardController::class, 'index'])->name('board.index');
+    Route::post('/boards', [BoardController::class, 'storeBoard'])->name('boards.store');
+    Route::delete('/boards/{board}', [BoardController::class, 'destroyBoard'])->name('boards.destroy');
     Route::get('/dashboard', function () {
         return redirect()->route('board.index');
     })->name('dashboard');
