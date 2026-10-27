@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Label } from '@/types/kanban';
-import { X, Trash2, Plus, Clock, Calendar, CheckSquare } from 'lucide-react';
+import { X, Trash2, Plus, Tag } from 'lucide-react';
 import { router } from '@inertiajs/react';
 
 interface CardModalProps {
     card: Card | null;
     columnId?: number;
+    columns?: Array<{ id: number; title: string; color?: string | null }>;
+    boardId?: number;
     availableLabels: Label[];
     isOpen: boolean;
     onClose: () => void;
@@ -14,6 +16,8 @@ interface CardModalProps {
 export const CardModal: React.FC<CardModalProps> = ({
     card,
     columnId,
+    columns = [],
+    boardId,
     availableLabels,
     isOpen,
     onClose,
@@ -23,6 +27,9 @@ export const CardModal: React.FC<CardModalProps> = ({
     const isEdit = !!card;
 
     const [title, setTitle] = useState(card?.title || '');
+    const [selectedColumnId, setSelectedColumnId] = useState<number>(
+        card?.column_id || columnId || (columns[0]?.id ?? 0)
+    );
     const [description, setDescription] = useState(card?.description || '');
     const [priority, setPriority] = useState<Card['priority']>(card?.priority || 'medium');
     const [color, setColor] = useState<string | null>(card?.color || null);
@@ -30,6 +37,28 @@ export const CardModal: React.FC<CardModalProps> = ({
     const [estimateMinutes, setEstimateMinutes] = useState(card?.estimate_minutes ? String(card.estimate_minutes) : '');
     const [selectedLabels, setSelectedLabels] = useState<number[]>(card?.labels?.map(l => l.id) || []);
     const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
+
+    // Criação de nova etiqueta
+    const [isCreatingLabel, setIsCreatingLabel] = useState(false);
+    const [newLabelName, setNewLabelName] = useState('');
+    const [newLabelColor, setNewLabelColor] = useState('#3b82f6');
+
+    useEffect(() => {
+        if (isOpen) {
+            setTitle(card?.title || '');
+            setSelectedColumnId(card?.column_id || columnId || (columns[0]?.id ?? 0));
+            setDescription(card?.description || '');
+            setPriority(card?.priority || 'medium');
+            setColor(card?.color || null);
+            setDueDate(card?.due_date || '');
+            setEstimateMinutes(card?.estimate_minutes ? String(card.estimate_minutes) : '');
+            setSelectedLabels(card?.labels?.map(l => l.id) || []);
+            setNewSubtaskTitle('');
+            setIsCreatingLabel(false);
+            setNewLabelName('');
+            setNewLabelColor('#3b82f6');
+        }
+    }, [isOpen, card, columnId]);
 
     const KANBAN_COLORS = [
         { label: 'Padrão', hex: '' },
@@ -41,11 +70,22 @@ export const CardModal: React.FC<CardModalProps> = ({
         { label: 'Rosa', hex: '#ec4899' },
     ];
 
+    const LABEL_COLORS = [
+        { label: 'Azul', hex: '#3b82f6' },
+        { label: 'Esmeralda', hex: '#10b981' },
+        { label: 'Âmbar', hex: '#f59e0b' },
+        { label: 'Vermelho', hex: '#ef4444' },
+        { label: 'Roxo', hex: '#8b5cf6' },
+        { label: 'Rosa', hex: '#ec4899' },
+        { label: 'Ciano', hex: '#06b6d4' },
+        { label: 'Slate', hex: '#64748b' },
+    ];
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
         const payload = {
-            column_id: card ? card.column_id : columnId,
+            column_id: selectedColumnId,
             title,
             description,
             priority,
@@ -75,8 +115,10 @@ export const CardModal: React.FC<CardModalProps> = ({
         }
     };
 
-    const handleAddSubtask = (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleAddSubtask = (e?: React.FormEvent | React.KeyboardEvent | React.MouseEvent) => {
+        if (e) {
+            e.preventDefault();
+        }
         if (!card || !newSubtaskTitle.trim()) return;
 
         router.post(`/cards/${card.id}/subtasks`, {
@@ -97,6 +139,34 @@ export const CardModal: React.FC<CardModalProps> = ({
         setSelectedLabels(prev =>
             prev.includes(labelId) ? prev.filter(id => id !== labelId) : [...prev, labelId]
         );
+    };
+
+    const handleCreateLabel = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!boardId || !newLabelName.trim()) return;
+
+        router.post(`/boards/${boardId}/labels`, {
+            name: newLabelName.trim(),
+            color_hex: newLabelColor,
+        }, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setNewLabelName('');
+                setIsCreatingLabel(false);
+            },
+        });
+    };
+
+    const handleDeleteLabel = (e: React.MouseEvent, label: Label) => {
+        e.stopPropagation();
+        if (confirm(`Tem certeza de que deseja excluir a etiqueta "${label.name}"?`)) {
+            router.delete(`/labels/${label.id}`, {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setSelectedLabels(prev => prev.filter(id => id !== label.id));
+                },
+            });
+        }
     };
 
     return (
@@ -139,6 +209,23 @@ export const CardModal: React.FC<CardModalProps> = ({
                             className="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-slate-500 focus:outline-none"
                         />
                     </div>
+
+                    {columns && columns.length > 0 && (
+                        <div>
+                            <label className="block text-xs font-medium text-slate-300 mb-1">Coluna / Status</label>
+                            <select
+                                value={selectedColumnId}
+                                onChange={(e) => setSelectedColumnId(Number(e.target.value))}
+                                className="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-slate-500 focus:outline-none"
+                            >
+                                {columns.map((col) => (
+                                    <option key={col.id} value={col.id}>
+                                        {col.title}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
 
                     <div>
                         <label className="block text-xs font-medium text-slate-300 mb-1">Descrição</label>
@@ -213,19 +300,73 @@ export const CardModal: React.FC<CardModalProps> = ({
                         </div>
                     </div>
 
-                    {/* Etiquetas */}
-                    {availableLabels && availableLabels.length > 0 && (
-                        <div>
-                            <label className="block text-xs font-medium text-slate-300 mb-1.5">Etiquetas</label>
+                    {/* Etiquetas (Tags) */}
+                    <div className="border-t border-slate-800 pt-3">
+                        <div className="flex items-center justify-between mb-2">
+                            <label className="flex items-center gap-1.5 text-xs font-medium text-slate-300">
+                                <Tag className="w-3.5 h-3.5 text-slate-400" />
+                                Etiquetas / Tags
+                            </label>
+                            {boardId && (
+                                <button
+                                    type="button"
+                                    onClick={() => setIsCreatingLabel(!isCreatingLabel)}
+                                    className="text-xs text-sky-400 hover:text-sky-300 flex items-center gap-1 transition-colors"
+                                >
+                                    <Plus className="w-3 h-3" />
+                                    {isCreatingLabel ? 'Fechar' : 'Nova Etiqueta'}
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Formulário inline para nova etiqueta */}
+                        {isCreatingLabel && boardId && (
+                            <div className="mb-3 p-2.5 rounded-md border border-slate-700/80 bg-slate-950/70 space-y-2">
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={newLabelName}
+                                        onChange={(e) => setNewLabelName(e.target.value)}
+                                        placeholder="Nome da etiqueta (ex: Bug, Feature)..."
+                                        className="flex-1 rounded border border-slate-700 bg-slate-900 px-2.5 py-1 text-xs text-slate-100 placeholder-slate-500 focus:border-slate-500 focus:outline-none"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={handleCreateLabel}
+                                        disabled={!newLabelName.trim()}
+                                        className="rounded bg-sky-600 px-3 py-1 text-xs font-medium text-white hover:bg-sky-500 disabled:opacity-50 transition-colors"
+                                    >
+                                        Criar
+                                    </button>
+                                </div>
+                                <div className="flex items-center gap-1.5 pt-1">
+                                    <span className="text-[11px] text-slate-400 mr-1">Cor:</span>
+                                    {LABEL_COLORS.map((lc) => (
+                                        <button
+                                            key={lc.hex}
+                                            type="button"
+                                            onClick={() => setNewLabelColor(lc.hex)}
+                                            className={`w-5 h-5 rounded-full border transition-all ${
+                                                newLabelColor === lc.hex
+                                                    ? 'ring-2 ring-white scale-110'
+                                                    : 'border-transparent hover:scale-105'
+                                            }`}
+                                            style={{ backgroundColor: lc.hex }}
+                                            title={lc.label}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {availableLabels && availableLabels.length > 0 ? (
                             <div className="flex flex-wrap gap-1.5">
                                 {availableLabels.map((lbl) => {
                                     const isSelected = selectedLabels.includes(lbl.id);
                                     return (
-                                        <button
-                                            type="button"
+                                        <div
                                             key={lbl.id}
-                                            onClick={() => toggleLabel(lbl.id)}
-                                            className={`text-xs px-2 py-1 rounded border transition-colors ${
+                                            className={`group inline-flex items-center text-xs rounded border transition-colors ${
                                                 isSelected
                                                     ? 'border-slate-400 bg-slate-800 text-white font-medium'
                                                     : 'border-slate-800 bg-slate-950/60 text-slate-400 hover:border-slate-700'
@@ -234,17 +375,35 @@ export const CardModal: React.FC<CardModalProps> = ({
                                                 borderColor: isSelected ? lbl.color_hex : undefined,
                                             }}
                                         >
-                                            <span
-                                                className="inline-block w-2 h-2 rounded-full mr-1.5"
-                                                style={{ backgroundColor: lbl.color_hex }}
-                                            />
-                                            {lbl.name}
-                                        </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => toggleLabel(lbl.id)}
+                                                className="px-2 py-1 flex items-center"
+                                            >
+                                                <span
+                                                    className="inline-block w-2 h-2 rounded-full mr-1.5 shrink-0"
+                                                    style={{ backgroundColor: lbl.color_hex }}
+                                                />
+                                                {lbl.name}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={(e) => handleDeleteLabel(e, lbl)}
+                                                className="p-1 pr-1.5 text-slate-500 hover:text-rose-400 transition-colors"
+                                                title="Excluir esta etiqueta do quadro"
+                                            >
+                                                <X className="w-3 h-3" />
+                                            </button>
+                                        </div>
                                     );
                                 })}
                             </div>
-                        </div>
-                    )}
+                        ) : (
+                            <p className="text-xs text-slate-500 italic">
+                                Nenhuma etiqueta criada ainda. Clique em "+ Nova Etiqueta" acima para adicionar.
+                            </p>
+                        )}
+                    </div>
 
                     {/* Subtarefas (quando o cartão já existe) */}
                     {isEdit && card && (
@@ -275,7 +434,15 @@ export const CardModal: React.FC<CardModalProps> = ({
                                     type="text"
                                     value={newSubtaskTitle}
                                     onChange={(e) => setNewSubtaskTitle(e.target.value)}
-                                    placeholder="Nova subtarefa..."
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            if (newSubtaskTitle.trim()) {
+                                                handleAddSubtask(e);
+                                            }
+                                        }
+                                    }}
+                                    placeholder="Nova subtarefa... (Pressione Enter para salvar)"
                                     className="flex-1 rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-xs text-slate-100 placeholder-slate-500 focus:border-slate-500 focus:outline-none"
                                 />
                                 <button

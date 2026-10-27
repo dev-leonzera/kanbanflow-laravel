@@ -21,8 +21,13 @@ Route::middleware(['auth'])->group(function () {
 
     Route::post('/cards', [BoardController::class, 'storeCard'])->name('cards.store');
     Route::put('/cards/{card}', [BoardController::class, 'updateCard'])->name('cards.update');
+    Route::patch('/cards/{card}/move', [BoardController::class, 'moveCard'])->name('cards.move');
     Route::delete('/cards/{card}', [BoardController::class, 'destroyCard'])->name('cards.destroy');
     Route::post('/cards/reorder', [BoardController::class, 'reorderCards'])->name('cards.reorder');
+
+    Route::post('/boards/{board}/labels', [BoardController::class, 'storeLabel'])->name('labels.store');
+    Route::put('/labels/{label}', [BoardController::class, 'updateLabel'])->name('labels.update');
+    Route::delete('/labels/{label}', [BoardController::class, 'destroyLabel'])->name('labels.destroy');
 
     Route::post('/cards/{card}/time-entries', [BoardController::class, 'storeTimeEntry'])->name('cards.time_entries.store');
 

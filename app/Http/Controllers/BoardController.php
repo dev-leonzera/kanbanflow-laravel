@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Board;
 use App\Models\Card;
 use App\Models\Column;
+use App\Models\Label;
 use App\Models\Subtask;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -55,7 +57,7 @@ class BoardController extends Controller
         ]);
     }
 
-    public function storeBoard(Request $request)
+    public function storeBoard(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
@@ -78,7 +80,7 @@ class BoardController extends Controller
         return redirect()->route('board.index', ['board_id' => $board->id]);
     }
 
-    public function destroyBoard(Request $request, Board $board)
+    public function destroyBoard(Request $request, Board $board): RedirectResponse
     {
         if ($board->user_id !== $request->user()->id) {
             abort(403);
@@ -95,7 +97,7 @@ class BoardController extends Controller
         return redirect()->route('board.index');
     }
 
-    public function storeCard(Request $request)
+    public function storeCard(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'column_id' => 'required|exists:columns,id',
@@ -128,13 +130,19 @@ class BoardController extends Controller
         ]);
 
         if (!empty($validated['label_ids'])) {
+            $boardLabelsCount = Label::where('board_id', $column->board_id)
+                ->whereIn('id', $validated['label_ids'])
+                ->count();
+            if ($boardLabelsCount !== count($validated['label_ids'])) {
+                abort(403);
+            }
             $card->labels()->sync($validated['label_ids']);
         }
 
         return redirect()->back();
     }
 
-    public function updateCard(Request $request, Card $card)
+    public function updateCard(Request $request, Card $card): RedirectResponse
     {
         $card->load('column.board');
         if ($card->column->board->user_id !== $request->user()->id) {
@@ -142,6 +150,7 @@ class BoardController extends Controller
         }
 
         $validated = $request->validate([
+            'column_id' => 'sometimes|required|exists:columns,id',
             'title' => 'sometimes|required|string|max:255',
             'description' => 'nullable|string',
             'priority' => 'nullable|in:low,medium,high,urgent',
@@ -152,16 +161,66 @@ class BoardController extends Controller
             'label_ids.*' => 'exists:labels,id',
         ]);
 
+        if (isset($validated['column_id']) && (int) $validated['column_id'] !== (int) $card->column_id) {
+            $newColumn = Column::findOrFail($validated['column_id']);
+            if ($newColumn->board_id !== $card->column->board_id) {
+                abort(403);
+            }
+            $highestOrder = Card::where('column_id', $newColumn->id)->max('order_position') ?? -1;
+            $validated['order_position'] = $highestOrder + 1;
+        }
+
         $card->update($validated);
 
         if ($request->has('label_ids')) {
-            $card->labels()->sync($request->input('label_ids', []));
+            $labelIds = $request->input('label_ids', []);
+            if (!empty($labelIds)) {
+                $boardLabelsCount = Label::where('board_id', $card->column->board_id)
+                    ->whereIn('id', $labelIds)
+                    ->count();
+                if ($boardLabelsCount !== count($labelIds)) {
+                    abort(403);
+                }
+            }
+            $card->labels()->sync($labelIds);
         }
 
         return redirect()->back();
     }
 
-    public function destroyCard(Request $request, Card $card)
+    public function moveCard(Request $request, Card $card): RedirectResponse
+    {
+        $card->load('column.board');
+        if ($card->column->board->user_id !== $request->user()->id) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'column_id' => 'required|exists:columns,id',
+            'order_position' => 'nullable|integer|min:0',
+        ]);
+
+        $targetColumn = Column::findOrFail($validated['column_id']);
+        if ($targetColumn->board_id !== $card->column->board_id) {
+            abort(403);
+        }
+
+        if (!isset($validated['order_position'])) {
+            $highestOrder = Card::where('column_id', $targetColumn->id)->max('order_position') ?? -1;
+            $orderPosition = $highestOrder + 1;
+        } else {
+            $orderPosition = (int) $validated['order_position'];
+        }
+
+        $card->update([
+            'column_id' => $targetColumn->id,
+            'order_position' => $orderPosition,
+        ]);
+
+        return redirect()->back();
+    }
+
+    public function destroyCard(Request $request, Card $card): RedirectResponse
     {
         $card->load('column.board');
         if ($card->column->board->user_id !== $request->user()->id) {
@@ -173,7 +232,7 @@ class BoardController extends Controller
         return redirect()->back();
     }
 
-    public function reorderCards(Request $request)
+    public function reorderCards(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'column_id' => 'required|exists:columns,id',
@@ -184,6 +243,17 @@ class BoardController extends Controller
 
         $targetColumn = Column::with('board')->findOrFail($validated['column_id']);
         if ($targetColumn->board->user_id !== $request->user()->id) {
+            abort(403);
+        }
+
+        $user = $request->user();
+        $cardIds = collect($validated['card_orders'])->pluck('id');
+        $cardsCount = Card::whereIn('id', $cardIds)
+            ->whereHas('column.board', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })->count();
+
+        if ($cardsCount !== count($validated['card_orders'])) {
             abort(403);
         }
 
@@ -199,7 +269,52 @@ class BoardController extends Controller
         return redirect()->back();
     }
 
-    public function storeTimeEntry(Request $request, Card $card)
+    public function storeLabel(Request $request, Board $board): RedirectResponse
+    {
+        if ($board->user_id !== $request->user()->id) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:50',
+            'color_hex' => ['required', 'string', 'max:7', 'regex:/^#[0-9a-fA-F]{6}$/'],
+        ]);
+
+        $board->labels()->create($validated);
+
+        return redirect()->back();
+    }
+
+    public function updateLabel(Request $request, Label $label): RedirectResponse
+    {
+        $label->load('board');
+        if ($label->board->user_id !== $request->user()->id) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:50',
+            'color_hex' => ['required', 'string', 'max:7', 'regex:/^#[0-9a-fA-F]{6}$/'],
+        ]);
+
+        $label->update($validated);
+
+        return redirect()->back();
+    }
+
+    public function destroyLabel(Request $request, Label $label): RedirectResponse
+    {
+        $label->load('board');
+        if ($label->board->user_id !== $request->user()->id) {
+            abort(403);
+        }
+
+        $label->delete();
+
+        return redirect()->back();
+    }
+
+    public function storeTimeEntry(Request $request, Card $card): RedirectResponse
     {
         $card->load('column.board');
         if ($card->column->board->user_id !== $request->user()->id) {
@@ -222,7 +337,7 @@ class BoardController extends Controller
         return redirect()->back();
     }
 
-    public function toggleSubtask(Request $request, Subtask $subtask)
+    public function toggleSubtask(Request $request, Subtask $subtask): RedirectResponse
     {
         $subtask->load('card.column.board');
         if ($subtask->card->column->board->user_id !== $request->user()->id) {
@@ -236,7 +351,7 @@ class BoardController extends Controller
         return redirect()->back();
     }
 
-    public function storeSubtask(Request $request, Card $card)
+    public function storeSubtask(Request $request, Card $card): RedirectResponse
     {
         $card->load('column.board');
         if ($card->column->board->user_id !== $request->user()->id) {
@@ -258,7 +373,7 @@ class BoardController extends Controller
         return redirect()->back();
     }
 
-    public function destroySubtask(Request $request, Subtask $subtask)
+    public function destroySubtask(Request $request, Subtask $subtask): RedirectResponse
     {
         $subtask->load('card.column.board');
         if ($subtask->card->column->board->user_id !== $request->user()->id) {
@@ -270,7 +385,7 @@ class BoardController extends Controller
         return redirect()->back();
     }
 
-    public function storeColumn(Request $request, Board $board)
+    public function storeColumn(Request $request, Board $board): RedirectResponse
     {
         if ($board->user_id !== $request->user()->id) {
             abort(403);
@@ -294,7 +409,7 @@ class BoardController extends Controller
         return redirect()->back();
     }
 
-    public function destroyColumn(Request $request, Column $column)
+    public function destroyColumn(Request $request, Column $column): RedirectResponse
     {
         $column->load('board');
         if ($column->board->user_id !== $request->user()->id) {

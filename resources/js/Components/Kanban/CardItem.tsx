@@ -1,21 +1,52 @@
-import React from 'react';
-import { Card } from '@/types/kanban';
-import { CheckSquare, Calendar, Clock, Flame } from 'lucide-react';
+import React, { useState } from 'react';
+import { Card, Column } from '@/types/kanban';
+import { CheckSquare, Calendar, Clock, Flame, ArrowRightLeft } from 'lucide-react';
 import { router } from '@inertiajs/react';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface CardItemProps {
     card: Card;
+    allColumns?: Column[];
     isActiveInTimer?: boolean;
+    isOverlay?: boolean;
     onEdit: (card: Card) => void;
     onStartTimer?: (card: Card) => void;
 }
 
 export const CardItem: React.FC<CardItemProps> = ({
     card,
+    allColumns = [],
     isActiveInTimer,
+    isOverlay = false,
     onEdit,
     onStartTimer,
 }) => {
+    const [isMoveMenuOpen, setIsMoveMenuOpen] = useState(false);
+
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({
+        id: card.id,
+        data: {
+            type: 'card',
+            card,
+        },
+        disabled: isOverlay,
+    });
+
+    const style: React.CSSProperties = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.35 : 1,
+        ...(card.color ? { borderLeftWidth: '4px', borderLeftColor: card.color } : {}),
+    };
+
     const completedSubtasks = card.subtasks?.filter((s) => s.is_completed).length || 0;
     const totalSubtasks = card.subtasks?.length || 0;
     const subtaskProgress = totalSubtasks > 0 ? Math.round((completedSubtasks / totalSubtasks) * 100) : 0;
@@ -63,21 +94,32 @@ export const CardItem: React.FC<CardItemProps> = ({
         }
     };
 
+    const handleMoveCard = (e: React.MouseEvent, targetColumnId: number) => {
+        e.stopPropagation();
+        setIsMoveMenuOpen(false);
+        router.patch(`/cards/${card.id}/move`, {
+            column_id: targetColumnId,
+        }, {
+            preserveScroll: true,
+        });
+    };
+
+    const otherColumns = (allColumns || []).filter(c => c.id !== card.column_id);
+
     return (
         <div
+            ref={setNodeRef}
+            style={style}
+            {...attributes}
+            {...listeners}
             onClick={() => onEdit(card)}
             className={`group relative cursor-pointer rounded-md border p-4 sm:p-4.5 transition-all duration-150 shadow-xs ${
                 isActiveInTimer
                     ? 'border-sky-500/60 bg-sky-950/25 ring-1 ring-sky-500/30'
                     : 'border-slate-800 bg-slate-900/90 hover:border-slate-700 hover:bg-slate-900'
-            }`}
-            style={
-                card.color
-                    ? { borderLeftWidth: '4px', borderLeftColor: card.color }
-                    : undefined
-            }
+            } ${isOverlay ? 'shadow-2xl ring-2 ring-sky-500/50 rotate-1 cursor-grabbing' : ''}`}
         >
-            {/* Header: Prioridade & Etiquetas & Botão de Timer Rápido */}
+            {/* Header: Prioridade & Etiquetas & Botão de Timer Rápido & Mover Rápido */}
             <div className="flex items-center justify-between gap-2 mb-2.5">
                 <div className="flex flex-wrap items-center gap-1.5">
                     <span className={`text-[11px] uppercase font-semibold px-2 py-0.5 rounded border ${priorityBadge}`}>
@@ -98,18 +140,62 @@ export const CardItem: React.FC<CardItemProps> = ({
                     ))}
                 </div>
 
-                {/* Botão de foco / Pomodoro para o cartão */}
-                <button
-                    onClick={handleTimerClick}
-                    className={`p-1.5 rounded text-xs transition-colors ${
-                        isActiveInTimer
-                            ? 'text-sky-400 bg-sky-500/20'
-                            : 'text-slate-500 hover:text-rose-400 hover:bg-slate-800'
-                    }`}
-                    title={isActiveInTimer ? 'Cartão em foco no timer' : 'Focar neste cartão no Pomodoro'}
-                >
-                    <Flame className="w-4 h-4" />
-                </button>
+                <div className="flex items-center gap-1 shrink-0">
+                    {/* Botão rápido: Mover para outra coluna / status */}
+                    {otherColumns.length > 0 && !isOverlay && (
+                        <div className="relative">
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setIsMoveMenuOpen(!isMoveMenuOpen);
+                                }}
+                                className="p-1.5 rounded text-xs text-slate-500 hover:text-slate-200 hover:bg-slate-800 transition-colors"
+                                title="Mover para outra coluna"
+                            >
+                                <ArrowRightLeft className="w-3.5 h-3.5" />
+                            </button>
+
+                            {isMoveMenuOpen && (
+                                <div
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="absolute right-0 top-7 z-30 w-44 rounded-md border border-slate-700 bg-slate-900 py-1 shadow-2xl"
+                                >
+                                    <div className="px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400 border-b border-slate-800">
+                                        Mover para
+                                    </div>
+                                    {otherColumns.map((col) => (
+                                        <button
+                                            key={col.id}
+                                            type="button"
+                                            onClick={(e) => handleMoveCard(e, col.id)}
+                                            className="flex w-full items-center gap-2 px-2.5 py-1.5 text-xs text-slate-200 hover:bg-slate-800 transition-colors text-left"
+                                        >
+                                            <span
+                                                className="w-2 h-2 rounded-full shrink-0"
+                                                style={{ backgroundColor: col.color || '#64748b' }}
+                                            />
+                                            <span className="truncate">{col.title}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Botão de foco / Pomodoro para o cartão */}
+                    <button
+                        onClick={handleTimerClick}
+                        className={`p-1.5 rounded text-xs transition-colors ${
+                            isActiveInTimer
+                                ? 'text-sky-400 bg-sky-500/20'
+                                : 'text-slate-500 hover:text-rose-400 hover:bg-slate-800'
+                        }`}
+                        title={isActiveInTimer ? 'Cartão em foco no timer' : 'Focar neste cartão no Pomodoro'}
+                    >
+                        <Flame className="w-4 h-4" />
+                    </button>
+                </div>
             </div>
 
             {/* Título com maior destaque e presença visual */}
