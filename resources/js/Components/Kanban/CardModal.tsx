@@ -143,11 +143,11 @@ export const CardModal: React.FC<CardModalProps> = ({
                     <div>
                         <label className="block text-xs font-medium text-slate-300 mb-1">Descrição</label>
                         <textarea
-                            rows={3}
+                            rows={5}
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
                             placeholder="Adicione detalhes, links ou especificações..."
-                            className="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-slate-500 focus:outline-none resize-none"
+                            className="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-slate-500 focus:outline-none resize-y min-h-[120px]"
                         />
                     </div>
 

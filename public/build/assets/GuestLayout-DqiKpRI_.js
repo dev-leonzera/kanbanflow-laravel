@@ -1,4 +1,4 @@
-import{j as e,L as t}from"./app-gLV9cVaS.js";import{A as r}from"./ApplicationLogo-B1HLlbFx.js";import{C as o}from"./clock-u9SX511g.js";import{c as l}from"./createLucideIcon-DHfwGLBj.js";import{C as c}from"./circle-check-BwR1ml8A.js";/**
+import{j as e,L as t}from"./app-DvKJwPLC.js";import{A as r}from"./ApplicationLogo-B14byNGb.js";import{C as o}from"./clock-34uVolUJ.js";import{c as l}from"./createLucideIcon-dvHCnhJq.js";import{C as c}from"./circle-check-BOQf0pfK.js";/**
  * @license lucide-react v1.60.0 - ISC
  *
  * This source code is licensed under the ISC license.
