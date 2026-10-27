@@ -27,6 +27,23 @@ export const CardItem: React.FC<CardItemProps> = ({
         low: 'bg-slate-500/10 text-slate-400 border-slate-500/30',
     }[card.priority || 'medium'];
 
+    const priorityLabels: Record<string, string> = {
+        urgent: 'Urgente',
+        high: 'Alta',
+        medium: 'Média',
+        low: 'Baixa',
+    };
+
+    const formatDate = (dateStr: string): string => {
+        if (!dateStr) return '';
+        const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (match) {
+            const [, year, month, day] = match;
+            return `${day}/${month}/${year}`;
+        }
+        return dateStr;
+    };
+
     // Cálculo do tempo gasto
     const spentMinutes = Math.round((card.time_spent_seconds || 0) / 60);
     const estimateMinutes = card.estimate_minutes || 0;
@@ -64,7 +81,7 @@ export const CardItem: React.FC<CardItemProps> = ({
             <div className="flex items-center justify-between gap-2 mb-2.5">
                 <div className="flex flex-wrap items-center gap-1.5">
                     <span className={`text-[11px] uppercase font-semibold px-2 py-0.5 rounded border ${priorityBadge}`}>
-                        {card.priority}
+                        {priorityLabels[card.priority || 'medium'] || card.priority}
                     </span>
 
                     {card.labels?.map((label) => (
@@ -153,7 +170,7 @@ export const CardItem: React.FC<CardItemProps> = ({
                     {card.due_date && (
                         <span className="flex items-center gap-1 font-mono text-slate-400">
                             <Calendar className="w-3.5 h-3.5 text-slate-500" />
-                            {card.due_date}
+                            {formatDate(card.due_date)}
                         </span>
                     )}
                 </div>
