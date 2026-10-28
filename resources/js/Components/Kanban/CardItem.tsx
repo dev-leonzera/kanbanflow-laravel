@@ -75,6 +75,47 @@ export const CardItem: React.FC<CardItemProps> = ({
         return dateStr;
     };
 
+    const getDeadlineStatus = (dateStr: string | null) => {
+        if (!dateStr) return null;
+        const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (!match) return null;
+
+        const targetDate = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const diffDays = Math.round((targetDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+        if (diffDays < 0) {
+            return {
+                label: `Expirado (${formatDate(dateStr)})`,
+                className: 'text-rose-400 bg-rose-950/40 border-rose-800/60 font-semibold',
+            };
+        }
+        if (diffDays === 0) {
+            return {
+                label: 'Vence hoje',
+                className: 'text-amber-400 bg-amber-950/40 border-amber-800/60 font-semibold',
+            };
+        }
+        if (diffDays === 1) {
+            return {
+                label: 'Vence amanhã',
+                className: 'text-sky-400 bg-sky-950/40 border-sky-800/60 font-medium',
+            };
+        }
+        if (diffDays <= 3) {
+            return {
+                label: `Vence em ${diffDays}d`,
+                className: 'text-amber-300 bg-amber-950/30 border-amber-800/50 font-medium',
+            };
+        }
+        return {
+            label: formatDate(dateStr),
+            className: 'text-slate-400 border-slate-800 bg-slate-800/40',
+        };
+    };
+
     // Cálculo do tempo gasto
     const spentMinutes = Math.round((card.time_spent_seconds || 0) / 60);
     const estimateMinutes = card.estimate_minutes || 0;
@@ -253,12 +294,16 @@ export const CardItem: React.FC<CardItemProps> = ({
             {/* Footer: Data de Entrega & Relação Tempo Gasto / Estimativa */}
             <div className="mt-3 flex items-center justify-between pt-2 border-t border-slate-800/80 text-[11px] text-slate-400">
                 <div className="flex items-center gap-2">
-                    {card.due_date && (
-                        <span className="flex items-center gap-1 font-mono text-slate-400">
-                            <Calendar className="w-3.5 h-3.5 text-slate-500" />
-                            {formatDate(card.due_date)}
-                        </span>
-                    )}
+                    {card.due_date && (() => {
+                        const status = getDeadlineStatus(card.due_date);
+                        if (!status) return null;
+                        return (
+                            <span className={`inline-flex items-center gap-1 font-mono text-[10.5px] px-1.5 py-0.5 rounded border ${status.className}`}>
+                                <Calendar className="w-3 h-3" />
+                                {status.label}
+                            </span>
+                        );
+                    })()}
                 </div>
 
                 {/* Tempo Gasto / Estimativa (Estilo KanbanFlow Original) */}

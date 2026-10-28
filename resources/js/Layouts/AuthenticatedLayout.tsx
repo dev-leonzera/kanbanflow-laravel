@@ -16,6 +16,7 @@ import {
     BarChart3
 } from 'lucide-react';
 import { Board } from '@/types/kanban';
+import NotificationMenu from '@/Components/Kanban/NotificationMenu';
 
 interface AuthenticatedLayoutProps extends PropsWithChildren {
     header?: ReactNode;
@@ -137,6 +138,9 @@ export default function Authenticated({
                                 </span>
                             </div>
 
+                            {/* Menu de Notificações e Prazos */}
+                            <NotificationMenu />
+
                             {/* Dropdown do Usuário */}
                             <div className="relative">
                                 <Dropdown>
@@ -186,7 +190,8 @@ export default function Authenticated({
                         </div>
 
                         {/* Botão Menu Mobile */}
-                        <div className="flex items-center sm:hidden">
+                        <div className="flex items-center gap-2 sm:hidden">
+                            <NotificationMenu />
                             <button
                                 onClick={() => setShowingNavigationDropdown(!showingNavigationDropdown)}
                                 className="inline-flex items-center justify-center rounded-md p-1.5 text-slate-400 hover:bg-slate-800 hover:text-slate-200 focus:outline-none"
