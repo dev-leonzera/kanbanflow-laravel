@@ -54,9 +54,9 @@ export default function Authenticated({
     };
 
     return (
-        <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans antialiased">
+        <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans antialiased w-full max-w-full overflow-x-hidden">
             {/* Top Navigation Bar: Estilo KanbanFlow Original */}
-            <nav className="border-b border-slate-800 bg-slate-900/95 sticky top-0 z-40 backdrop-blur-xs">
+            <nav className="border-b border-slate-800 bg-slate-900/95 sticky top-0 z-40 backdrop-blur-xs w-full max-w-full">
                 <div className="px-4 sm:px-6 lg:px-8">
                     <div className="flex h-12 items-center justify-between">
                         {/* Lado Esquerdo: Logo + Seletor de Quadros/Projetos */}
@@ -335,13 +335,13 @@ export default function Authenticated({
 
             {/* Sub-Header / ToolBar Funcional: Integrado com o mesmo tom do App */}
             {header && (
-                <div className="relative z-20 border-b border-slate-800/90 bg-slate-900/60 px-4 py-2 sm:px-6 lg:px-8">
+                <div className="relative z-20 border-b border-slate-800/90 bg-slate-900/60 px-3 py-2 sm:px-6 lg:px-8 w-full max-w-full">
                     {header}
                 </div>
             )}
 
             {/* Conteúdo Principal */}
-            <main className="flex-1 bg-slate-950 flex flex-col">{children}</main>
+            <main className="flex-1 bg-slate-950 flex flex-col w-full max-w-full min-w-0 overflow-x-hidden">{children}</main>
         </div>
     );
 }

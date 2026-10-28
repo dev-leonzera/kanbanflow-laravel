@@ -230,7 +230,7 @@ export default function Index({ board, boards = [] }: BoardIndexProps) {
             boards={boards}
             currentBoard={board}
             header={
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 sm:gap-4 w-full max-w-full">
                     <div className="flex items-center gap-4">
                         <div>
                             <h2 className="text-lg font-bold leading-tight text-slate-100 flex items-center gap-2">
@@ -253,7 +253,7 @@ export default function Index({ board, boards = [] }: BoardIndexProps) {
 
                     {/* Barra de Filtros e Busca Rápida */}
                     <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
-                        <div className="relative flex-1 lg:flex-none">
+                        <div className="relative flex-1 min-w-[130px] lg:flex-none">
                             <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-2.5" />
                             <input
                                 type="text"
@@ -265,11 +265,11 @@ export default function Index({ board, boards = [] }: BoardIndexProps) {
                         </div>
 
                         {/* Filtro por Prioridade */}
-                        <div className="relative shrink-0">
+                        <div className="relative shrink-0 flex-1 sm:flex-none">
                             <select
                                 value={priorityFilter}
                                 onChange={(e) => setPriorityFilter(e.target.value)}
-                                className="h-8 px-2 text-xs rounded-md bg-slate-900 border border-slate-700 text-slate-300 focus:outline-none focus:border-slate-500"
+                                className="h-8 px-2 text-xs rounded-md bg-slate-900 border border-slate-700 text-slate-300 focus:outline-none focus:border-slate-500 w-full"
                             >
                                 <option value="all">Todas Prioridades</option>
                                 <option value="urgent">Urgente</option>
@@ -280,11 +280,11 @@ export default function Index({ board, boards = [] }: BoardIndexProps) {
                         </div>
 
                         {/* Filtro por Etiqueta / Tag */}
-                        <div className="relative shrink-0">
+                        <div className="relative shrink-0 flex-1 sm:flex-none">
                             <select
                                 value={tagFilter}
                                 onChange={(e) => setTagFilter(e.target.value)}
-                                className="h-8 px-2 text-xs rounded-md bg-slate-900 border border-slate-700 text-slate-300 focus:outline-none focus:border-slate-500"
+                                className="h-8 px-2 text-xs rounded-md bg-slate-900 border border-slate-700 text-slate-300 focus:outline-none focus:border-slate-500 w-full"
                             >
                                 <option value="all">Todas Etiquetas</option>
                                 {board.labels?.map((lbl) => (
@@ -302,7 +302,7 @@ export default function Index({ board, boards = [] }: BoardIndexProps) {
 
             {/* Mobile Column Indicator / Quick Jump Tabs */}
             {filteredColumns.length > 0 && (
-                <div className="flex md:hidden items-center gap-1.5 px-3 py-2 bg-slate-900/90 border-b border-slate-800/80 overflow-x-auto scrollbar-none text-xs">
+                <div className="flex md:hidden items-center gap-1.5 px-3 py-2 bg-slate-900/90 border-b border-slate-800/80 overflow-x-auto scrollbar-none text-xs w-full max-w-full min-w-0">
                     {filteredColumns.map((col) => (
                         <button
                             key={col.id}
@@ -310,7 +310,7 @@ export default function Index({ board, boards = [] }: BoardIndexProps) {
                             onClick={() => {
                                 const el = document.getElementById(`column-${col.id}`);
                                 if (el) {
-                                    el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                                    el.scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' });
                                 }
                             }}
                             className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-800/80 text-slate-300 border border-slate-700/60 whitespace-nowrap active:bg-slate-700"
@@ -336,13 +336,13 @@ export default function Index({ board, boards = [] }: BoardIndexProps) {
                 onDragEnd={handleDragEnd}
                 onDragCancel={handleDragCancel}
             >
-                <div className="flex-1 p-3 sm:p-4 flex gap-3 sm:gap-4 overflow-x-auto select-none bg-slate-950 text-slate-100 snap-x snap-mandatory md:snap-none scroll-smooth">
+                <div className="flex-1 p-3 sm:p-4 flex gap-3 sm:gap-4 overflow-x-auto select-none bg-slate-950 text-slate-100 snap-x snap-mandatory md:snap-none scroll-smooth w-full max-w-full min-w-0 scroll-pl-3 sm:scroll-pl-4">
                     {/* Colunas do Kanban */}
                     {filteredColumns.map((column) => (
                         <div
                             key={column.id}
                             id={`column-${column.id}`}
-                            className="snap-center shrink-0 w-[84vw] sm:w-80"
+                            className="snap-start shrink-0 w-[84vw] sm:w-80"
                         >
                             <ColumnComponent
                                 column={column}
@@ -356,7 +356,7 @@ export default function Index({ board, boards = [] }: BoardIndexProps) {
                     ))}
 
                     {/* Botão de Adicionar Nova Coluna */}
-                    <div className="snap-center shrink-0 w-[84vw] sm:w-80">
+                    <div className="snap-start shrink-0 w-[84vw] sm:w-80 pr-2 sm:pr-0">
                         {isAddColumnOpen ? (
                             <form
                                 onSubmit={handleCreateColumn}

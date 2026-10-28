@@ -213,61 +213,58 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
     };
 
     return (
-        <div className="relative">
-            {/* Widget Principal com overflow visível para dropdowns não criarem barras de rolagem estranhas */}
-            <div className="flex items-center gap-1.5 sm:gap-2 bg-slate-900 border border-slate-800 rounded-md px-2 sm:px-2.5 py-1 text-slate-200 max-w-full">
+        <div className="relative w-full max-w-full">
+            {/* Widget Principal adaptado para mobile sem quebrar ou gerar scroll horizontal */}
+            <div className="flex items-center justify-between sm:justify-start gap-1 sm:gap-2 bg-slate-900 border border-slate-800 rounded-md px-1.5 sm:px-2.5 py-1 text-slate-200 w-full max-w-full">
                 {/* Seletor de Modo */}
-                <div className="flex items-center gap-1 border-r border-slate-800 pr-1.5 sm:pr-2 shrink-0">
+                <div className="flex items-center gap-0.5 sm:gap-1 border-r border-slate-800 pr-1 sm:pr-2 shrink-0">
                     <button
                         onClick={() => changeMode('pomodoro')}
-                        className={`px-1.5 sm:px-2 py-0.5 rounded text-xs font-medium transition-colors shrink-0 ${
+                        className={`p-1 sm:px-2 sm:py-0.5 rounded text-xs font-medium transition-colors shrink-0 flex items-center ${
                             mode === 'pomodoro'
                                 ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
                                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
                         }`}
-                        title="Foco de 25 min"
+                        title="Foco Pomodoro de 25 min"
                     >
-                        <Flame className="w-3.5 h-3.5 inline mr-1 text-rose-500" />
-                        <span className="hidden sm:inline">Pomodoro</span>
-                        <span className="sm:hidden">25m</span>
+                        <Flame className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                        <span className="hidden sm:inline sm:ml-1">Pomodoro</span>
                     </button>
 
                     <button
                         onClick={() => changeMode('short_break')}
-                        className={`px-1.5 sm:px-2 py-0.5 rounded text-xs font-medium transition-colors shrink-0 ${
+                        className={`p-1 sm:px-2 sm:py-0.5 rounded text-xs font-medium transition-colors shrink-0 flex items-center ${
                             mode === 'short_break'
                                 ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
                         }`}
                         title="Pausa curta de 5 min"
                     >
-                        <Coffee className="w-3.5 h-3.5 inline mr-1 text-emerald-400" />
-                        <span className="hidden sm:inline">Pausa</span>
-                        <span className="sm:hidden">5m</span>
+                        <Coffee className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        <span className="hidden sm:inline sm:ml-1">Pausa</span>
                     </button>
 
                     <button
                         onClick={() => changeMode('stopwatch')}
-                        className={`px-1.5 sm:px-2 py-0.5 rounded text-xs font-medium transition-colors shrink-0 ${
+                        className={`p-1 sm:px-2 sm:py-0.5 rounded text-xs font-medium transition-colors shrink-0 flex items-center ${
                             mode === 'stopwatch'
                                 ? 'bg-sky-500/20 text-sky-400 border border-sky-500/30'
                                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
                         }`}
                         title="Cronômetro livre"
                     >
-                        <Clock className="w-3.5 h-3.5 inline mr-1 text-sky-400" />
-                        <span className="hidden sm:inline">Livre</span>
-                        <span className="sm:hidden">Livre</span>
+                        <Clock className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                        <span className="hidden sm:inline sm:ml-1">Livre</span>
                     </button>
                 </div>
 
                 {/* Display do Tempo */}
-                <div className="font-mono text-xs sm:text-sm font-bold tracking-wider text-slate-100 min-w-[42px] sm:min-w-[50px] text-center shrink-0">
+                <div className="font-mono text-xs sm:text-sm font-bold tracking-wider text-slate-100 min-w-[38px] sm:min-w-[50px] text-center shrink-0">
                     {formatTime(timeLeft)}
                 </div>
 
                 {/* Controles Play / Pause / Reset */}
-                <div className="flex items-center gap-1 shrink-0">
+                <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
                     <button
                         onClick={togglePlay}
                         className={`p-1 rounded-sm border transition-colors ${
@@ -291,33 +288,33 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
                     {selectedCard && sessionSecondsElapsed.current >= 5 && (
                         <button
                             onClick={handleLogCurrentSession}
-                            className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/30 transition-colors"
+                            className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/30 transition-colors shrink-0"
                             title="Salvar tempo no cartão selecionado"
                         >
                             <Check className="w-3 h-3 inline mr-0.5" />
-                            Salvar
+                            <span className="hidden sm:inline">Salvar</span>
                         </button>
                     )}
                 </div>
 
                 {/* Seletor do Cartão Focado */}
-                <div className="relative border-l border-slate-800 pl-2">
+                <div className="relative border-l border-slate-800 pl-1.5 sm:pl-2 min-w-0 flex-1 sm:flex-none">
                     <button
                         onClick={() => {
                             setIsCardDropdownOpen(!isCardDropdownOpen);
                             setIsSettingsOpen(false);
                         }}
-                        className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-slate-100 max-w-[130px] sm:max-w-[160px] truncate"
+                        className="flex items-center gap-1 text-xs text-slate-300 hover:text-slate-100 max-w-[95px] xs:max-w-[130px] sm:max-w-[160px] truncate"
                         title={selectedCard ? `Cartão ativo: ${selectedCard.title}` : 'Vincular tarefa ao timer'}
                     >
                         <span className="truncate">
-                            {selectedCard ? selectedCard.title : 'Vincular cartão...'}
+                            {selectedCard ? selectedCard.title : 'Cartão...'}
                         </span>
                         <ChevronDown className="w-3 h-3 text-slate-500 shrink-0" />
                     </button>
 
                     {isCardDropdownOpen && (
-                        <div className="absolute right-0 top-full mt-2 z-50 w-72 max-w-[90vw] rounded-md border border-slate-800 bg-slate-900 shadow-2xl py-1 max-h-64 overflow-y-auto">
+                        <div className="absolute right-0 sm:right-auto sm:left-0 top-full mt-2 z-50 w-72 max-w-[calc(100vw-2rem)] rounded-md border border-slate-800 bg-slate-900 shadow-2xl py-1 max-h-64 overflow-y-auto">
                             <div className="px-3 py-1.5 border-b border-slate-800 flex items-center justify-between text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
                                 <span>Cartões do Quadro</span>
                                 <button
@@ -368,7 +365,7 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
                 </div>
 
                 {/* Botão de Configurações do Pomodoro (Áudio e Início Automático) */}
-                <div className="relative border-l border-slate-800 pl-1.5">
+                <div className="relative border-l border-slate-800 pl-1 sm:pl-1.5 shrink-0">
                     <button
                         onClick={() => {
                             setIsSettingsOpen(!isSettingsOpen);
@@ -383,7 +380,7 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
                     </button>
 
                     {isSettingsOpen && (
-                        <div className="absolute right-0 top-full mt-2 z-50 w-64 rounded-md border border-slate-800 bg-slate-900 shadow-2xl p-3 text-xs">
+                        <div className="absolute right-0 top-full mt-2 z-50 w-64 max-w-[calc(100vw-2rem)] rounded-md border border-slate-800 bg-slate-900 shadow-2xl p-3 text-xs">
                             <div className="flex items-center justify-between pb-2 border-b border-slate-800 mb-2.5">
                                 <span className="font-semibold text-slate-200">Ajustes do Timer</span>
                                 <button
