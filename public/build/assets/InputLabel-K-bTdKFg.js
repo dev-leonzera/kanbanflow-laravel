@@ -1,1 +1,0 @@
-import{j as r}from"./app-wYgNW8Gq.js";function i({value:t,className:e="",children:s,...n}){return r.jsx("label",{...n,className:"block text-xs font-medium text-slate-300 tracking-wide "+e,children:t||s})}export{i as I};

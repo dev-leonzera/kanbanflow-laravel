@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, Label } from '@/types/kanban';
 import { X, Trash2, Plus, Tag } from 'lucide-react';
 import { router } from '@inertiajs/react';
+import { DatePicker } from '@/Components/DatePicker';
 
 interface CardModalProps {
     card: Card | null;
@@ -255,11 +256,10 @@ export const CardModal: React.FC<CardModalProps> = ({
 
                         <div>
                             <label className="block text-xs font-medium text-slate-300 mb-1">Data de Entrega</label>
-                            <input
-                                type="date"
+                            <DatePicker
                                 value={dueDate}
-                                onChange={(e) => setDueDate(e.target.value)}
-                                className="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-slate-500 focus:outline-none font-mono"
+                                onChange={(val) => setDueDate(val)}
+                                placeholder="DD/MM/AAAA"
                             />
                         </div>
 
