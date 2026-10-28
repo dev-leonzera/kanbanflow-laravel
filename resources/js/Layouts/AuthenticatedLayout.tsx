@@ -1,7 +1,7 @@
 import ApplicationLogo from '@/Components/ApplicationLogo';
 import Dropdown from '@/Components/Dropdown';
 import { Link, usePage, router } from '@inertiajs/react';
-import { PropsWithChildren, ReactNode, useState } from 'react';
+import { PropsWithChildren, ReactNode, useState, useEffect } from 'react';
 import {
     LayoutDashboard,
     Clock,
@@ -13,10 +13,13 @@ import {
     ChevronDown,
     Plus,
     Flame,
-    BarChart3
+    BarChart3,
+    Sparkles,
 } from 'lucide-react';
 import { Board } from '@/types/kanban';
+import { PageProps } from '@/types';
 import NotificationMenu from '@/Components/Kanban/NotificationMenu';
+import { ChangelogModal } from '@/Components/Changelog/ChangelogModal';
 
 interface AuthenticatedLayoutProps extends PropsWithChildren {
     header?: ReactNode;
@@ -30,12 +33,20 @@ export default function Authenticated({
     currentBoard,
     children,
 }: AuthenticatedLayoutProps) {
-    const user = usePage().props.auth.user;
+    const { auth, app_version, changelog } = usePage<PageProps>().props;
+    const user = auth.user;
     const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
     const [isNewBoardModalOpen, setIsNewBoardModalOpen] = useState(false);
     const [newBoardTitle, setNewBoardTitle] = useState('');
     const [newBoardDescription, setNewBoardDescription] = useState('');
-    const APP_VERSION = 'v1.2.0';
+    const APP_VERSION = app_version || 'v1.4.0';
+    const [isChangelogOpen, setIsChangelogOpen] = useState(Boolean(changelog?.should_show));
+
+    useEffect(() => {
+        if (changelog?.should_show) {
+            setIsChangelogOpen(true);
+        }
+    }, [changelog?.should_show]);
 
     const handleCreateBoard = (e: React.FormEvent) => {
         e.preventDefault();
@@ -171,6 +182,20 @@ export default function Authenticated({
                                             Meu Perfil
                                         </Dropdown.Link>
 
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsChangelogOpen(true)}
+                                            className="flex w-full items-center justify-between px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
+                                        >
+                                            <span className="flex items-center gap-2">
+                                                <Sparkles className="w-3.5 h-3.5 text-sky-400" />
+                                                Novidades da Versão
+                                            </span>
+                                            <span className="font-mono text-[10px] text-sky-400 bg-sky-500/10 px-1.5 py-0.5 rounded border border-sky-500/20">
+                                                {APP_VERSION}
+                                            </span>
+                                        </button>
+
                                         <Dropdown.Link
                                             href={route('logout')}
                                             method="post"
@@ -247,6 +272,22 @@ export default function Authenticated({
                                 <User className="w-4 h-4 text-slate-400" />
                                 Meu Perfil
                             </Link>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setIsChangelogOpen(true);
+                                    setShowingNavigationDropdown(false);
+                                }}
+                                className="flex w-full items-center justify-between px-2.5 py-1.5 text-xs text-slate-300 hover:bg-slate-800 rounded transition-colors"
+                            >
+                                <span className="flex items-center gap-2">
+                                    <Sparkles className="w-4 h-4 text-sky-400" />
+                                    Novidades da Versão
+                                </span>
+                                <span className="font-mono text-[10px] text-sky-400 bg-sky-500/10 px-1.5 py-0.5 rounded border border-sky-500/20">
+                                    {APP_VERSION}
+                                </span>
+                            </button>
                             <Link
                                 href={route('logout')}
                                 method="post"
@@ -261,7 +302,16 @@ export default function Authenticated({
                         {/* Versão do App Mobile */}
                         <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] font-mono text-slate-500">
                             <span>KanbanFlow Laravel</span>
-                            <span className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">{APP_VERSION}</span>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setIsChangelogOpen(true);
+                                    setShowingNavigationDropdown(false);
+                                }}
+                                className="px-1.5 py-0.5 rounded bg-slate-800 text-sky-400 border border-slate-700 hover:bg-slate-700 transition-colors"
+                            >
+                                {APP_VERSION}
+                            </button>
                         </div>
                     </div>
                 )}
@@ -342,6 +392,14 @@ export default function Authenticated({
 
             {/* Conteúdo Principal */}
             <main className="flex-1 bg-slate-950 flex flex-col w-full max-w-full min-w-0 overflow-x-hidden">{children}</main>
+
+            {/* Modal de Changelog / Novidades da Versão */}
+            <ChangelogModal
+                isOpen={isChangelogOpen}
+                onClose={() => setIsChangelogOpen(false)}
+                changelogData={changelog}
+                isAutomaticPrompt={Boolean(changelog?.should_show)}
+            />
         </div>
     );
 }

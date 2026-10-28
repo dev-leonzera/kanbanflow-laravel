@@ -56,9 +56,17 @@ export default function Index({ board, boards = [] }: BoardIndexProps) {
         })
     );
 
-    // Sincroniza estado das colunas quando as props do servidor mudam
+    // Sincroniza estado das colunas e cartão selecionado quando as props do servidor mudam
     useEffect(() => {
         setColumnsState(board.columns || []);
+        if (selectedCard) {
+            const freshCard = (board.columns || [])
+                .flatMap((col) => col.cards || [])
+                .find((c) => c.id === selectedCard.id);
+            if (freshCard) {
+                setSelectedCard(freshCard);
+            }
+        }
     }, [board.columns]);
 
     // Lista plana de todos os cartões para o seletor do Timer

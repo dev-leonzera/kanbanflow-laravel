@@ -7,6 +7,7 @@ use Inertia\Inertia;
 
 use App\Http\Controllers\BoardController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\ChangelogController;
 
 Route::get('/', function () {
     return redirect()->route('board.index');
@@ -43,6 +44,9 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.mark_read');
     Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark_all_read');
     Route::delete('/notifications/{id}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
+
+    Route::post('/changelog/acknowledge', [ChangelogController::class, 'acknowledge'])->name('changelog.acknowledge');
+    Route::get('/changelog', [ChangelogController::class, 'index'])->name('changelog.index');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

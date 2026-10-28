@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, Label } from '@/types/kanban';
 import { X, Trash2, Plus, Tag } from 'lucide-react';
 import { router } from '@inertiajs/react';
@@ -38,6 +38,11 @@ export const CardModal: React.FC<CardModalProps> = ({
     const [estimateMinutes, setEstimateMinutes] = useState(card?.estimate_minutes ? String(card.estimate_minutes) : '');
     const [selectedLabels, setSelectedLabels] = useState<number[]>(card?.labels?.map(l => l.id) || []);
     const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
+    const [pendingSubtasks, setPendingSubtasks] = useState<Array<{ id: number; title: string; is_completed: boolean }>>([]);
+
+    const subtaskInputRef = useRef<HTMLInputElement>(null);
+    const prevCardIdRef = useRef<number | null | undefined>(undefined);
+    const prevIsOpenRef = useRef<boolean>(false);
 
     // Criação de nova etiqueta
     const [isCreatingLabel, setIsCreatingLabel] = useState(false);
@@ -45,7 +50,10 @@ export const CardModal: React.FC<CardModalProps> = ({
     const [newLabelColor, setNewLabelColor] = useState('#3b82f6');
 
     useEffect(() => {
-        if (isOpen) {
+        const isNewlyOpened = isOpen && !prevIsOpenRef.current;
+        const isCardChanged = card?.id !== prevCardIdRef.current;
+
+        if (isNewlyOpened || isCardChanged) {
             setTitle(card?.title || '');
             setSelectedColumnId(card?.column_id || columnId || (columns[0]?.id ?? 0));
             setDescription(card?.description || '');
@@ -54,12 +62,16 @@ export const CardModal: React.FC<CardModalProps> = ({
             setDueDate(card?.due_date || '');
             setEstimateMinutes(card?.estimate_minutes ? String(card.estimate_minutes) : '');
             setSelectedLabels(card?.labels?.map(l => l.id) || []);
+            setPendingSubtasks([]);
             setNewSubtaskTitle('');
             setIsCreatingLabel(false);
             setNewLabelName('');
             setNewLabelColor('#3b82f6');
         }
-    }, [isOpen, card, columnId]);
+
+        prevCardIdRef.current = card?.id;
+        prevIsOpenRef.current = isOpen;
+    }, [isOpen, card?.id, columnId]);
 
     const KANBAN_COLORS = [
         { label: 'Padrão', hex: '' },
@@ -85,7 +97,7 @@ export const CardModal: React.FC<CardModalProps> = ({
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        const payload = {
+        const payload: Record<string, any> = {
             column_id: selectedColumnId,
             title,
             description,
@@ -101,6 +113,9 @@ export const CardModal: React.FC<CardModalProps> = ({
                 onSuccess: () => onClose(),
             });
         } else {
+            if (pendingSubtasks.length > 0) {
+                payload.subtasks = pendingSubtasks.map((s) => s.title);
+            }
             router.post('/cards', payload, {
                 onSuccess: () => onClose(),
             });
@@ -119,21 +134,55 @@ export const CardModal: React.FC<CardModalProps> = ({
     const handleAddSubtask = (e?: React.FormEvent | React.KeyboardEvent | React.MouseEvent) => {
         if (e) {
             e.preventDefault();
+            e.stopPropagation();
         }
-        if (!card || !newSubtaskTitle.trim()) return;
+        const trimmed = newSubtaskTitle.trim();
+        if (!trimmed) return;
 
-        router.post(`/cards/${card.id}/subtasks`, {
-            title: newSubtaskTitle.trim(),
-        }, {
-            preserveScroll: true,
-            onSuccess: () => setNewSubtaskTitle(''),
-        });
+        if (isEdit && card) {
+            router.post(`/cards/${card.id}/subtasks`, {
+                title: trimmed,
+            }, {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setNewSubtaskTitle('');
+                    setTimeout(() => {
+                        subtaskInputRef.current?.focus();
+                    }, 50);
+                },
+            });
+        } else {
+            setPendingSubtasks(prev => [
+                ...prev,
+                { id: Date.now(), title: trimmed, is_completed: false },
+            ]);
+            setNewSubtaskTitle('');
+            setTimeout(() => {
+                subtaskInputRef.current?.focus();
+            }, 50);
+        }
     };
 
     const handleDeleteSubtask = (subtaskId: number) => {
-        router.delete(`/subtasks/${subtaskId}`, {
-            preserveScroll: true,
-        });
+        if (isEdit && card) {
+            router.delete(`/subtasks/${subtaskId}`, {
+                preserveScroll: true,
+            });
+        } else {
+            setPendingSubtasks(prev => prev.filter(s => s.id !== subtaskId));
+        }
+    };
+
+    const handleToggleSubtask = (subtaskId: number) => {
+        if (isEdit && card) {
+            router.patch(`/subtasks/${subtaskId}/toggle`, {}, {
+                preserveScroll: true,
+            });
+        } else {
+            setPendingSubtasks(prev =>
+                prev.map(s => s.id === subtaskId ? { ...s, is_completed: !s.is_completed } : s)
+            );
+        }
     };
 
     const toggleLabel = (labelId: number) => {
@@ -405,56 +454,86 @@ export const CardModal: React.FC<CardModalProps> = ({
                         )}
                     </div>
 
-                    {/* Subtarefas (quando o cartão já existe) */}
-                    {isEdit && card && (
-                        <div className="border-t border-slate-800 pt-3">
-                            <label className="block text-xs font-medium text-slate-300 mb-2">Checklist de Subtarefas</label>
-                            <div className="space-y-1.5 mb-3">
-                                {card.subtasks?.map((st) => (
-                                    <div
-                                        key={st.id}
-                                        className="flex items-center justify-between rounded bg-slate-950/50 px-2.5 py-1.5 border border-slate-800/80 text-xs"
-                                    >
-                                        <span className={`text-slate-200 ${st.is_completed ? 'line-through text-slate-500' : ''}`}>
-                                            {st.title}
-                                        </span>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleDeleteSubtask(st.id)}
-                                            className="text-slate-500 hover:text-rose-400"
-                                        >
-                                            <Trash2 className="w-3.5 h-3.5" />
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
+                    {/* Subtarefas */}
+                    {(() => {
+                        const currentSubtasks = isEdit && card ? (card.subtasks || []) : pendingSubtasks;
+                        return (
+                            <div className="border-t border-slate-800 pt-3">
+                                <div className="flex items-center justify-between mb-2">
+                                    <label className="block text-xs font-medium text-slate-300">
+                                        Checklist de Subtarefas
+                                        {currentSubtasks.length > 0 && (
+                                            <span className="ml-1 text-slate-400 font-normal">
+                                                ({currentSubtasks.filter((s) => s.is_completed).length}/{currentSubtasks.length})
+                                            </span>
+                                        )}
+                                    </label>
+                                    <span className="text-[10px] text-slate-400 font-mono">
+                                        Pressione Enter para salvar
+                                    </span>
+                                </div>
 
-                            <div className="flex gap-2">
-                                <input
-                                    type="text"
-                                    value={newSubtaskTitle}
-                                    onChange={(e) => setNewSubtaskTitle(e.target.value)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                            e.preventDefault();
-                                            if (newSubtaskTitle.trim()) {
-                                                handleAddSubtask(e);
+                                {currentSubtasks.length > 0 && (
+                                    <div className="space-y-1.5 mb-3 max-h-48 overflow-y-auto pr-1">
+                                        {currentSubtasks.map((st) => (
+                                            <div
+                                                key={st.id}
+                                                className="flex items-center justify-between gap-2 rounded bg-slate-950/60 px-2.5 py-1.5 border border-slate-800/80 text-xs hover:border-slate-700/80 transition-colors"
+                                            >
+                                                <label className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer select-none">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={st.is_completed}
+                                                        onChange={() => handleToggleSubtask(st.id)}
+                                                        className="rounded-xs border-slate-700 bg-slate-900 text-emerald-500 focus:ring-0 focus:ring-offset-0 w-3.5 h-3.5 cursor-pointer"
+                                                    />
+                                                    <span className={`truncate text-slate-200 ${st.is_completed ? 'line-through text-slate-400' : ''}`}>
+                                                        {st.title}
+                                                    </span>
+                                                </label>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleDeleteSubtask(st.id)}
+                                                    className="text-slate-400 hover:text-rose-400 p-0.5 rounded transition-colors"
+                                                    title="Excluir subtarefa"
+                                                >
+                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                <div className="flex gap-2">
+                                    <input
+                                        ref={subtaskInputRef}
+                                        type="text"
+                                        value={newSubtaskTitle}
+                                        onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                if (newSubtaskTitle.trim()) {
+                                                    handleAddSubtask(e);
+                                                }
                                             }
-                                        }
-                                    }}
-                                    placeholder="Nova subtarefa... (Pressione Enter para salvar)"
-                                    className="flex-1 rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-xs text-slate-100 placeholder-slate-500 focus:border-slate-500 focus:outline-none"
-                                />
-                                <button
-                                    type="button"
-                                    onClick={handleAddSubtask}
-                                    className="rounded-md bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-200 hover:bg-slate-700 transition-colors"
-                                >
-                                    Adicionar
-                                </button>
+                                        }}
+                                        placeholder="Nova subtarefa... (Pressione Enter para salvar)"
+                                        className="flex-1 rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-xs text-slate-100 placeholder-slate-500 focus:border-slate-500 focus:outline-none"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={handleAddSubtask}
+                                        disabled={!newSubtaskTitle.trim()}
+                                        className="rounded-md bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-200 hover:bg-slate-700 disabled:opacity-40 transition-colors"
+                                    >
+                                        Adicionar
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        );
+                    })()}
 
                     {/* Footer de Ações */}
                     <div className="border-t border-slate-800 pt-4 flex items-center justify-end gap-2">

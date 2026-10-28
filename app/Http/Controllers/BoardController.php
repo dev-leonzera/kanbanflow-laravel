@@ -109,6 +109,7 @@ class BoardController extends Controller
             'estimate_minutes' => 'nullable|integer|min:0',
             'label_ids' => 'nullable|array',
             'label_ids.*' => 'exists:labels,id',
+            'subtasks' => 'nullable|array',
         ]);
 
         $column = Column::with('board')->findOrFail($validated['column_id']);
@@ -137,6 +138,20 @@ class BoardController extends Controller
                 abort(403);
             }
             $card->labels()->sync($validated['label_ids']);
+        }
+
+        if (!empty($validated['subtasks'])) {
+            foreach ($validated['subtasks'] as $index => $subtaskData) {
+                $subtaskTitle = is_array($subtaskData) ? ($subtaskData['title'] ?? '') : (string) $subtaskData;
+                $trimmed = trim($subtaskTitle);
+                if ($trimmed !== '') {
+                    $card->subtasks()->create([
+                        'title' => $trimmed,
+                        'is_completed' => false,
+                        'order_position' => $index,
+                    ]);
+                }
+            }
         }
 
         return redirect()->back();
