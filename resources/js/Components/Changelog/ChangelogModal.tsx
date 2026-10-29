@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { router } from '@inertiajs/react';
 import { ChangelogData, ReleaseNote } from '@/types';
 import {
@@ -49,6 +49,20 @@ export const ChangelogModal: React.FC<ChangelogModalProps> = ({
         });
     };
 
+    // Fecha o modal ao pressionar a tecla Escape
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                handleAcknowledge();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen]);
+
     const getItemBadge = (type: string) => {
         switch (type) {
             case 'feature':
@@ -82,8 +96,18 @@ export const ChangelogModal: React.FC<ChangelogModalProps> = ({
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-3 sm:p-4">
-            <div className="flex flex-col w-full max-w-2xl max-h-[90vh] rounded-lg border border-slate-800 bg-slate-900 shadow-2xl overflow-hidden animate-in fade-in-0 zoom-in-95 duration-200">
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-3 sm:p-4"
+            onClick={(e) => {
+                if (e.target === e.currentTarget) {
+                    handleAcknowledge();
+                }
+            }}
+        >
+            <div
+                className="flex flex-col w-full max-w-2xl max-h-[90vh] rounded-lg border border-slate-800 bg-slate-900 shadow-2xl overflow-hidden animate-in fade-in-0 zoom-in-95 duration-200"
+                onClick={(e) => e.stopPropagation()}
+            >
                 {/* Header */}
                 <div className="flex items-center justify-between border-b border-slate-800 px-4 py-3.5 bg-slate-900/90">
                     <div className="flex items-center gap-2.5">

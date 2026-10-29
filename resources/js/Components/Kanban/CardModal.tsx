@@ -73,6 +73,20 @@ export const CardModal: React.FC<CardModalProps> = ({
         prevIsOpenRef.current = isOpen;
     }, [isOpen, card?.id, columnId]);
 
+    // Fecha o modal ao pressionar a tecla Escape
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                onClose();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen, onClose]);
+
     const KANBAN_COLORS = [
         { label: 'Padrão', hex: '' },
         { label: 'Vermelho', hex: '#ef4444' },
@@ -220,8 +234,18 @@ export const CardModal: React.FC<CardModalProps> = ({
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/75 backdrop-blur-xs p-0 sm:p-4">
-            <div className="flex flex-col w-full sm:max-w-xl rounded-t-xl sm:rounded-lg border border-slate-800 bg-slate-900 shadow-2xl max-h-[92vh] sm:max-h-[90vh]">
+        <div
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/75 backdrop-blur-xs p-0 sm:p-4"
+            onClick={(e) => {
+                if (e.target === e.currentTarget) {
+                    onClose();
+                }
+            }}
+        >
+            <div
+                className="flex flex-col w-full sm:max-w-xl rounded-t-xl sm:rounded-lg border border-slate-800 bg-slate-900 shadow-2xl max-h-[92vh] sm:max-h-[90vh]"
+                onClick={(e) => e.stopPropagation()}
+            >
                 {/* Header */}
                 <div className="flex items-center justify-between border-b border-slate-800 p-3.5 sm:p-4">
                     <h3 className="text-sm sm:text-base font-semibold text-slate-100">

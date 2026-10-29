@@ -134,6 +134,51 @@ export default function NotificationMenu() {
         }
     };
 
+    const formatDate = (dateStr?: string | null): string => {
+        if (!dateStr) return '';
+        const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (match) {
+            const [, year, month, day] = match;
+            return `${day}/${month}/${year}`;
+        }
+        return dateStr;
+    };
+
+    const formatRelativeTime = (notification: InAppNotification): string => {
+        if (notification.created_at) {
+            const date = new Date(notification.created_at);
+            const now = new Date();
+            const diffSeconds = Math.max(0, Math.floor((now.getTime() - date.getTime()) / 1000));
+
+            if (diffSeconds < 10) return 'agora há pouco';
+            if (diffSeconds < 60) return `há ${diffSeconds} segundos`;
+            const diffMinutes = Math.floor(diffSeconds / 60);
+            if (diffMinutes === 1) return 'há 1 minuto';
+            if (diffMinutes < 60) return `há ${diffMinutes} minutos`;
+            const diffHours = Math.floor(diffMinutes / 60);
+            if (diffHours === 1) return 'há 1 hora';
+            if (diffHours < 24) return `há ${diffHours} horas`;
+            const diffDays = Math.floor(diffHours / 24);
+            if (diffDays === 1) return 'há 1 dia';
+            if (diffDays < 7) return `há ${diffDays} dias`;
+        }
+
+        if (notification.created_at_human) {
+            return notification.created_at_human
+                .replace(/(\d+)\s+seconds?\s+ago/i, 'há $1 segundos')
+                .replace(/1\s+second\s+ago/i, 'há 1 segundo')
+                .replace(/(\d+)\s+minutes?\s+ago/i, 'há $1 minutos')
+                .replace(/1\s+minute\s+ago/i, 'há 1 minuto')
+                .replace(/(\d+)\s+hours?\s+ago/i, 'há $1 horas')
+                .replace(/1\s+hour\s+ago/i, 'há 1 hora')
+                .replace(/(\d+)\s+days?\s+ago/i, 'há $1 dias')
+                .replace(/1\s+day\s+ago/i, 'há 1 dia')
+                .replace(/just now/i, 'agora há pouco');
+        }
+
+        return '';
+    };
+
     const renderTypeBadge = (type: string, daysDiff?: number) => {
         switch (type) {
             case 'overdue':
@@ -287,10 +332,10 @@ export default function NotificationMenu() {
 
                                                 <div className="flex items-center gap-2 mt-1.5 text-[10px] font-mono text-slate-500">
                                                     {notification.data?.due_date && (
-                                                        <span>Prazo: {notification.data.due_date}</span>
+                                                        <span>Prazo: {formatDate(notification.data.due_date)}</span>
                                                     )}
-                                                    {notification.created_at_human && (
-                                                        <span>• {notification.created_at_human}</span>
+                                                    {formatRelativeTime(notification) && (
+                                                        <span>• {formatRelativeTime(notification)}</span>
                                                     )}
                                                 </div>
                                             </div>

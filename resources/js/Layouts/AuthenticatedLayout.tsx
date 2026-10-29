@@ -64,6 +64,20 @@ export default function Authenticated({
         });
     };
 
+    // Fecha o modal de novo quadro ao pressionar a tecla Escape
+    useEffect(() => {
+        if (!isNewBoardModalOpen) return;
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                setIsNewBoardModalOpen(false);
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isNewBoardModalOpen]);
+
     return (
         <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans antialiased w-full max-w-full overflow-x-hidden">
             {/* Top Navigation Bar: Estilo KanbanFlow Original */}
@@ -319,8 +333,18 @@ export default function Authenticated({
 
             {/* Modal de Criação de Novo Projeto / Quadro */}
             {isNewBoardModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-4">
-                    <div className="flex flex-col w-full max-w-md rounded-lg border border-slate-800 bg-slate-900 shadow-2xl">
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-4"
+                    onClick={(e) => {
+                        if (e.target === e.currentTarget) {
+                            setIsNewBoardModalOpen(false);
+                        }
+                    }}
+                >
+                    <div
+                        className="flex flex-col w-full max-w-md rounded-lg border border-slate-800 bg-slate-900 shadow-2xl"
+                        onClick={(e) => e.stopPropagation()}
+                    >
                         <div className="flex items-center justify-between border-b border-slate-800 p-3.5">
                             <h3 className="text-sm font-semibold text-slate-100 flex items-center gap-2">
                                 <FolderKanban className="w-4 h-4 text-sky-400" />

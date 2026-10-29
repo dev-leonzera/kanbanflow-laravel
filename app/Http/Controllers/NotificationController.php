@@ -24,7 +24,7 @@ class NotificationController extends Controller
                     'data' => $notification->data,
                     'read_at' => $notification->read_at?->toISOString(),
                     'created_at' => $notification->created_at?->toISOString(),
-                    'created_at_human' => $notification->created_at?->diffForHumans(),
+                    'created_at_human' => $notification->created_at?->locale('pt_BR')->diffForHumans(),
                 ];
             });
 

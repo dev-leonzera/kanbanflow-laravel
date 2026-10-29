@@ -72,17 +72,96 @@ const playAlarmSound = (type: 'pomodoro_complete' | 'break_complete') => {
     }
 };
 
+interface PersistedTimerState {
+    mode: Mode;
+    timeLeft: number;
+    isRunning: boolean;
+    pomodorosCompleted: number;
+    sessionSecondsElapsed: number;
+    lastTimestamp: number;
+}
+
+const getInitialTimerState = () => {
+    try {
+        const saved = localStorage.getItem('kf_pomodoro_state');
+        if (!saved) {
+            return {
+                mode: 'pomodoro' as Mode,
+                timeLeft: MODE_CONFIG.pomodoro.duration,
+                isRunning: false,
+                pomodorosCompleted: 0,
+                sessionSecondsElapsed: 0,
+            };
+        }
+
+        const data: Partial<PersistedTimerState> = JSON.parse(saved);
+        const validModes: Mode[] = ['pomodoro', 'short_break', 'long_break', 'stopwatch'];
+        const mode: Mode = validModes.includes(data.mode as Mode) ? (data.mode as Mode) : 'pomodoro';
+        const pomodorosCompleted = typeof data.pomodorosCompleted === 'number' ? data.pomodorosCompleted : 0;
+        let sessionSecondsElapsed = typeof data.sessionSecondsElapsed === 'number' ? data.sessionSecondsElapsed : 0;
+        let isRunning = Boolean(data.isRunning);
+        let timeLeft = typeof data.timeLeft === 'number' ? data.timeLeft : MODE_CONFIG[mode].duration;
+
+        // Se estava rodando antes de recarregar a página, calcula a diferença em segundos
+        if (isRunning && data.lastTimestamp) {
+            const now = Date.now();
+            const elapsed = Math.max(0, Math.floor((now - data.lastTimestamp) / 1000));
+
+            if (mode === 'stopwatch') {
+                if (elapsed < 86400) {
+                    timeLeft += elapsed;
+                    sessionSecondsElapsed += elapsed;
+                } else {
+                    isRunning = false;
+                }
+            } else {
+                const remaining = timeLeft - elapsed;
+                if (remaining > 0) {
+                    timeLeft = remaining;
+                    sessionSecondsElapsed += elapsed;
+                } else {
+                    // O tempo expirou enquanto a página recarregava
+                    timeLeft = 0;
+                    sessionSecondsElapsed += Math.max(0, timeLeft);
+                    isRunning = false;
+                }
+            }
+        }
+
+        return {
+            mode,
+            timeLeft,
+            isRunning,
+            pomodorosCompleted,
+            sessionSecondsElapsed,
+        };
+    } catch {
+        return {
+            mode: 'pomodoro' as Mode,
+            timeLeft: MODE_CONFIG.pomodoro.duration,
+            isRunning: false,
+            pomodorosCompleted: 0,
+            sessionSecondsElapsed: 0,
+        };
+    }
+};
+
 export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
     cards,
     selectedCard,
     onSelectCard,
 }) => {
-    const [mode, setMode] = useState<Mode>('pomodoro');
-    const [timeLeft, setTimeLeft] = useState<number>(MODE_CONFIG.pomodoro.duration);
-    const [isRunning, setIsRunning] = useState<boolean>(false);
-    const [pomodorosCompleted, setPomodorosCompleted] = useState<number>(0);
+    const [initialState] = useState(getInitialTimerState);
+
+    const [mode, setMode] = useState<Mode>(initialState.mode);
+    const [timeLeft, setTimeLeft] = useState<number>(initialState.timeLeft);
+    const [isRunning, setIsRunning] = useState<boolean>(initialState.isRunning);
+    const [pomodorosCompleted, setPomodorosCompleted] = useState<number>(initialState.pomodorosCompleted);
     const [isCardDropdownOpen, setIsCardDropdownOpen] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+    const cardDropdownRef = useRef<HTMLDivElement>(null);
+    const settingsRef = useRef<HTMLDivElement>(null);
 
     // Preferências com persistência local
     const [soundEnabled, setSoundEnabled] = useState<boolean>(() => {
@@ -101,7 +180,42 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
     });
 
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
-    const sessionSecondsElapsed = useRef<number>(0);
+    const sessionSecondsElapsed = useRef<number>(initialState.sessionSecondsElapsed);
+
+    // Atualizar LocalStorage com o estado completo do temporizador
+    const persistTimerState = (state: {
+        mode: Mode;
+        timeLeft: number;
+        isRunning: boolean;
+        pomodorosCompleted: number;
+        sessionSecondsElapsed: number;
+    }) => {
+        try {
+            const payload: PersistedTimerState = {
+                ...state,
+                lastTimestamp: Date.now(),
+            };
+            localStorage.setItem('kf_pomodoro_state', JSON.stringify(payload));
+        } catch {
+            // Ignora silenciosamente
+        }
+    };
+
+    // Fechar dropdowns de cartões e configurações ao clicar fora
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            const target = event.target as Node;
+            if (cardDropdownRef.current && !cardDropdownRef.current.contains(target)) {
+                setIsCardDropdownOpen(false);
+            }
+            if (settingsRef.current && !settingsRef.current.contains(target)) {
+                setIsSettingsOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     // Atualizar LocalStorage quando preferências mudarem
     useEffect(() => {
@@ -116,21 +230,62 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
         localStorage.setItem('kf_auto_start_pomodoros', String(autoStartPomodoros));
     }, [autoStartPomodoros]);
 
+    // Salvar estado antes de descarregar a página
+    useEffect(() => {
+        const handleBeforeUnload = () => {
+            persistTimerState({
+                mode,
+                timeLeft,
+                isRunning,
+                pomodorosCompleted,
+                sessionSecondsElapsed: sessionSecondsElapsed.current,
+            });
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [mode, timeLeft, isRunning, pomodorosCompleted]);
+
     const changeMode = (newMode: Mode, autoStart: boolean = false) => {
+        const duration = MODE_CONFIG[newMode].duration;
         setIsRunning(autoStart);
         setMode(newMode);
-        setTimeLeft(MODE_CONFIG[newMode].duration);
+        setTimeLeft(duration);
         sessionSecondsElapsed.current = 0;
+        persistTimerState({
+            mode: newMode,
+            timeLeft: duration,
+            isRunning: autoStart,
+            pomodorosCompleted,
+            sessionSecondsElapsed: 0,
+        });
     };
 
     const togglePlay = () => {
-        setIsRunning((prev) => !prev);
+        setIsRunning((prev) => {
+            const next = !prev;
+            persistTimerState({
+                mode,
+                timeLeft,
+                isRunning: next,
+                pomodorosCompleted,
+                sessionSecondsElapsed: sessionSecondsElapsed.current,
+            });
+            return next;
+        });
     };
 
     const resetTimer = () => {
         setIsRunning(false);
-        setTimeLeft(MODE_CONFIG[mode].duration);
+        const duration = MODE_CONFIG[mode].duration;
+        setTimeLeft(duration);
         sessionSecondsElapsed.current = 0;
+        persistTimerState({
+            mode,
+            timeLeft: duration,
+            isRunning: false,
+            pomodorosCompleted,
+            sessionSecondsElapsed: 0,
+        });
     };
 
     // Salvar entrada de tempo no backend para o cartão selecionado
@@ -151,11 +306,29 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
                 sessionSecondsElapsed.current += 1;
 
                 if (mode === 'stopwatch') {
-                    setTimeLeft((prev) => prev + 1);
+                    setTimeLeft((prev) => {
+                        const next = prev + 1;
+                        persistTimerState({
+                            mode: 'stopwatch',
+                            timeLeft: next,
+                            isRunning: true,
+                            pomodorosCompleted,
+                            sessionSecondsElapsed: sessionSecondsElapsed.current,
+                        });
+                        return next;
+                    });
                 } else {
                     setTimeLeft((prev) => {
                         if (prev <= 1) {
                             setIsRunning(false);
+
+                            persistTimerState({
+                                mode,
+                                timeLeft: 0,
+                                isRunning: false,
+                                pomodorosCompleted: mode === 'pomodoro' ? pomodorosCompleted + 1 : pomodorosCompleted,
+                                sessionSecondsElapsed: 0,
+                            });
 
                             if (mode === 'pomodoro') {
                                 setPomodorosCompleted((c) => c + 1);
@@ -183,7 +356,16 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
 
                             return 0;
                         }
-                        return prev - 1;
+
+                        const next = prev - 1;
+                        persistTimerState({
+                            mode,
+                            timeLeft: next,
+                            isRunning: true,
+                            pomodorosCompleted,
+                            sessionSecondsElapsed: sessionSecondsElapsed.current,
+                        });
+                        return next;
                     });
                 }
             }, 1000);
@@ -196,7 +378,7 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
         return () => {
             if (intervalRef.current) clearInterval(intervalRef.current);
         };
-    }, [isRunning, mode, selectedCard, soundEnabled, autoStartBreaks, autoStartPomodoros]);
+    }, [isRunning, mode, selectedCard, soundEnabled, autoStartBreaks, autoStartPomodoros, pomodorosCompleted]);
 
     const formatTime = (totalSeconds: number): string => {
         const mins = Math.floor(totalSeconds / 60);
@@ -298,7 +480,7 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
                 </div>
 
                 {/* Seletor do Cartão Focado */}
-                <div className="relative border-l border-slate-800 pl-1.5 sm:pl-2 min-w-0 flex-1 sm:flex-none">
+                <div ref={cardDropdownRef} className="relative border-l border-slate-800 pl-1.5 sm:pl-2 min-w-0 flex-1 sm:flex-none">
                     <button
                         onClick={() => {
                             setIsCardDropdownOpen(!isCardDropdownOpen);
@@ -328,6 +510,13 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
                                 onClick={() => {
                                     onSelectCard(null);
                                     setIsCardDropdownOpen(false);
+                                    persistTimerState({
+                                        mode,
+                                        timeLeft,
+                                        isRunning,
+                                        pomodorosCompleted,
+                                        sessionSecondsElapsed: sessionSecondsElapsed.current,
+                                    });
                                 }}
                                 className="w-full text-left px-3 py-2 text-xs text-slate-400 hover:bg-slate-800 hover:text-slate-200 border-b border-slate-850"
                             >
@@ -344,6 +533,13 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
                                         onClick={() => {
                                             onSelectCard(c);
                                             setIsCardDropdownOpen(false);
+                                            persistTimerState({
+                                                mode,
+                                                timeLeft,
+                                                isRunning,
+                                                pomodorosCompleted,
+                                                sessionSecondsElapsed: sessionSecondsElapsed.current,
+                                            });
                                         }}
                                         className={`w-full text-left px-3 py-2 text-xs truncate flex items-center justify-between hover:bg-slate-800 transition-colors ${
                                             selectedCard?.id === c.id
@@ -365,7 +561,7 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
                 </div>
 
                 {/* Botão de Configurações do Pomodoro (Áudio e Início Automático) */}
-                <div className="relative border-l border-slate-800 pl-1 sm:pl-1.5 shrink-0">
+                <div ref={settingsRef} className="relative border-l border-slate-800 pl-1 sm:pl-1.5 shrink-0">
                     <button
                         onClick={() => {
                             setIsSettingsOpen(!isSettingsOpen);

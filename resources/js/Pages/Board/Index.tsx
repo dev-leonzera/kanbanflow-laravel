@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, router } from '@inertiajs/react';
 import { Board, Card, Column } from '@/types/kanban';
@@ -41,8 +41,15 @@ export default function Index({ board, boards = [] }: BoardIndexProps) {
     // Cartão em arrasto ativo
     const [activeCard, setActiveCard] = useState<Card | null>(null);
 
-    // Cartão em foco no Pomodoro Timer
-    const [timerActiveCard, setTimerActiveCard] = useState<Card | null>(null);
+    // Cartão em foco no Pomodoro Timer (com ID persistido no localStorage)
+    const [timerActiveCardId, setTimerActiveCardId] = useState<number | null>(() => {
+        try {
+            const saved = localStorage.getItem('kf_timer_active_card_id');
+            return saved ? parseInt(saved, 10) : null;
+        } catch {
+            return null;
+        }
+    });
 
     // Sensores do DnD (com restrição de distância de 5px para não atrapalhar cliques normais)
     const sensors = useSensors(
@@ -69,8 +76,35 @@ export default function Index({ board, boards = [] }: BoardIndexProps) {
         }
     }, [board.columns]);
 
-    // Lista plana de todos os cartões para o seletor do Timer
-    const allCards: Card[] = columnsState.flatMap((col) => col.cards || []);
+    // Lista plana de todos os cartões para o seletor do Timer e tags
+    const allCards: Card[] = useMemo(
+        () => columnsState.flatMap((col) => col.cards || []),
+        [columnsState]
+    );
+
+    // Obtém o cartão atualmente selecionado no timer a partir do ID salvo
+    const timerActiveCard = useMemo(() => {
+        if (!timerActiveCardId) return null;
+        return allCards.find((c) => c.id === timerActiveCardId) || null;
+    }, [allCards, timerActiveCardId]);
+
+    const handleSelectTimerCard = (card: Card | null) => {
+        if (card) {
+            setTimerActiveCardId(card.id);
+            try {
+                localStorage.setItem('kf_timer_active_card_id', String(card.id));
+            } catch {
+                // Silencioso
+            }
+        } else {
+            setTimerActiveCardId(null);
+            try {
+                localStorage.removeItem('kf_timer_active_card_id');
+            } catch {
+                // Silencioso
+            }
+        }
+    };
 
     const handleEditCard = (card: Card) => {
         setSelectedCard(card);
@@ -85,7 +119,7 @@ export default function Index({ board, boards = [] }: BoardIndexProps) {
     };
 
     const handleStartTimerForCard = (card: Card) => {
-        setTimerActiveCard(card);
+        handleSelectTimerCard(card);
     };
 
     const handleCreateColumn = (e: React.FormEvent) => {
@@ -255,7 +289,7 @@ export default function Index({ board, boards = [] }: BoardIndexProps) {
                         <PomodoroTimer
                             cards={allCards}
                             selectedCard={timerActiveCard}
-                            onSelectCard={setTimerActiveCard}
+                            onSelectCard={handleSelectTimerCard}
                         />
                     </div>
 
