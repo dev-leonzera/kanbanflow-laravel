@@ -38,6 +38,7 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/subtasks/{subtask}', [BoardController::class, 'destroySubtask'])->name('subtasks.destroy');
 
     Route::post('/boards/{board}/columns', [BoardController::class, 'storeColumn'])->name('columns.store');
+    Route::post('/boards/{board}/columns/reorder', [BoardController::class, 'reorderColumns'])->name('columns.reorder');
     Route::delete('/columns/{column}', [BoardController::class, 'destroyColumn'])->name('columns.destroy');
 
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');

@@ -435,4 +435,36 @@ class BoardController extends Controller
 
         return redirect()->back();
     }
+
+    public function reorderColumns(Request $request, Board $board): RedirectResponse
+    {
+        if ($board->user_id !== $request->user()->id) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'column_orders' => 'required|array',
+            'column_orders.*.id' => 'required|exists:columns,id',
+            'column_orders.*.order_position' => 'required|integer',
+        ]);
+
+        $colIds = collect($validated['column_orders'])->pluck('id');
+        $ownedColsCount = Column::where('board_id', $board->id)
+            ->whereIn('id', $colIds)
+            ->count();
+
+        if ($ownedColsCount !== count($validated['column_orders'])) {
+            abort(403);
+        }
+
+        DB::transaction(function () use ($validated, $board) {
+            foreach ($validated['column_orders'] as $item) {
+                Column::where('id', $item['id'])
+                    ->where('board_id', $board->id)
+                    ->update(['order_position' => $item['order_position']]);
+            }
+        });
+
+        return redirect()->back();
+    }
 }

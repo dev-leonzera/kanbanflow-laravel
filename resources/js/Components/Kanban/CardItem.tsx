@@ -1,9 +1,21 @@
 import React, { useState } from 'react';
 import { Card, Column } from '@/types/kanban';
-import { CheckSquare, Calendar, Clock, Flame, ArrowRightLeft } from 'lucide-react';
+import {
+    CheckSquare,
+    Calendar,
+    Clock,
+    Flame,
+    ArrowRightLeft,
+    Play,
+    Pause,
+    ListPlus,
+    ListCheck,
+    Check,
+} from 'lucide-react';
 import { router } from '@inertiajs/react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { usePomodoro } from './PomodoroContext';
 
 interface CardItemProps {
     card: Card;
@@ -17,12 +29,27 @@ interface CardItemProps {
 export const CardItem: React.FC<CardItemProps> = ({
     card,
     allColumns = [],
-    isActiveInTimer,
     isOverlay = false,
     onEdit,
-    onStartTimer,
 }) => {
     const [isMoveMenuOpen, setIsMoveMenuOpen] = useState(false);
+
+    const {
+        activeCardId,
+        isRunning,
+        timeLeft,
+        queueIds,
+        startCard,
+        togglePlay,
+        addToQueue,
+        removeFromQueue,
+    } = usePomodoro();
+
+    const isActive = activeCardId === card.id;
+    const isTicking = isActive && isRunning;
+    const queueIndex = queueIds.indexOf(card.id);
+    const isInQueue = queueIndex !== -1;
+    const queuePosition = queueIndex + 1;
 
     const {
         attributes,
@@ -73,6 +100,12 @@ export const CardItem: React.FC<CardItemProps> = ({
             return `${day}/${month}/${year}`;
         }
         return dateStr;
+    };
+
+    const formatTimerTime = (totalSeconds: number): string => {
+        const mins = Math.floor(totalSeconds / 60);
+        const secs = totalSeconds % 60;
+        return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
     };
 
     const getDeadlineStatus = (dateStr: string | null) => {
@@ -128,10 +161,25 @@ export const CardItem: React.FC<CardItemProps> = ({
         });
     };
 
-    const handleTimerClick = (e: React.MouseEvent) => {
+    // Acionar Pomodoro pelo Card:
+    // Se o card já é o ativo, alterna Play/Pause.
+    // Se for outro, define como ativo e dá play imediatamente!
+    const handleTimerAction = (e: React.MouseEvent) => {
         e.stopPropagation();
-        if (onStartTimer) {
-            onStartTimer(card);
+        if (isActive) {
+            togglePlay();
+        } else {
+            startCard(card);
+        }
+    };
+
+    // Alternar presença na fila
+    const handleToggleQueue = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (isInQueue) {
+            removeFromQueue(card.id);
+        } else {
+            addToQueue(card);
         }
     };
 
@@ -145,7 +193,7 @@ export const CardItem: React.FC<CardItemProps> = ({
         });
     };
 
-    const otherColumns = (allColumns || []).filter(c => c.id !== card.column_id);
+    const otherColumns = (allColumns || []).filter((c) => c.id !== card.column_id);
 
     return (
         <div
@@ -154,14 +202,14 @@ export const CardItem: React.FC<CardItemProps> = ({
             {...attributes}
             {...listeners}
             onClick={() => onEdit(card)}
-            className={`group relative cursor-pointer rounded-md border p-4 sm:p-4.5 transition-all duration-150 shadow-xs ${
-                isActiveInTimer
-                    ? 'border-sky-500/60 bg-sky-950/25 ring-1 ring-sky-500/30'
+            className={`group relative cursor-pointer rounded-md border p-3.5 sm:p-4 transition-all duration-150 shadow-xs ${
+                isActive
+                    ? 'border-amber-500/60 bg-amber-950/15 ring-1 ring-amber-500/30'
                     : 'border-slate-800 bg-slate-900/90 hover:border-slate-700 hover:bg-slate-900'
-            } ${isOverlay ? 'shadow-2xl ring-2 ring-sky-500/50 rotate-1 cursor-grabbing' : ''}`}
+            } ${isOverlay ? 'shadow-2xl ring-2 ring-amber-500/50 rotate-1 cursor-grabbing' : ''}`}
         >
-            {/* Header: Prioridade & Etiquetas & Botão de Timer Rápido & Mover Rápido */}
-            <div className="flex items-center justify-between gap-2 mb-2.5">
+            {/* Header: Prioridade & Etiquetas & Botão de Timer Rápido & Fila & Mover */}
+            <div className="flex items-center justify-between gap-1.5 mb-2">
                 <div className="flex flex-wrap items-center gap-1.5">
                     <span className={`text-[11px] uppercase font-semibold px-2 py-0.5 rounded border ${priorityBadge}`}>
                         {priorityLabels[card.priority || 'medium'] || card.priority}
@@ -179,10 +227,36 @@ export const CardItem: React.FC<CardItemProps> = ({
                             {label.name}
                         </span>
                     ))}
+
+                    {/* Indicador de Fila se não for o ativo */}
+                    {isInQueue && !isActive && (
+                        <span
+                            onClick={handleToggleQueue}
+                            className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-slate-800/80 text-amber-400 border border-amber-500/20 hover:bg-rose-950/40 hover:text-rose-400 hover:border-rose-500/30 transition-colors"
+                            title={`Posição ${queuePosition} na fila do Pomodoro. Clique para remover.`}
+                        >
+                            #{queuePosition} na fila
+                        </span>
+                    )}
+
+                    {/* Indicador do Cartão Ativo */}
+                    {isActive && (
+                        <span
+                            className={`inline-flex items-center gap-1 text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded border ${
+                                isTicking
+                                    ? 'bg-rose-500/20 text-rose-400 border-rose-500/40 animate-pulse'
+                                    : 'bg-amber-500/20 text-amber-400 border-amber-500/40'
+                            }`}
+                            title={isTicking ? 'Pomodoro rodando agora!' : 'Pomodoro pausado'}
+                        >
+                            <Flame className="w-2.5 h-2.5 text-rose-500" />
+                            <span>{formatTimerTime(timeLeft)}</span>
+                        </span>
+                    )}
                 </div>
 
                 <div className="flex items-center gap-1 shrink-0">
-                    {/* Botão rápido: Mover para outra coluna / status */}
+                    {/* Botão rápido: Mover para outra coluna */}
                     {otherColumns.length > 0 && !isOverlay && (
                         <div className="relative">
                             <button
@@ -191,7 +265,7 @@ export const CardItem: React.FC<CardItemProps> = ({
                                     e.stopPropagation();
                                     setIsMoveMenuOpen(!isMoveMenuOpen);
                                 }}
-                                className="p-1.5 rounded text-xs text-slate-500 hover:text-slate-200 hover:bg-slate-800 transition-colors"
+                                className="p-1 rounded text-xs text-slate-500 hover:text-slate-200 hover:bg-slate-800 transition-colors"
                                 title="Mover para outra coluna"
                             >
                                 <ArrowRightLeft className="w-3.5 h-3.5" />
@@ -224,23 +298,62 @@ export const CardItem: React.FC<CardItemProps> = ({
                         </div>
                     )}
 
-                    {/* Botão de foco / Pomodoro para o cartão */}
-                    <button
-                        onClick={handleTimerClick}
-                        className={`p-1.5 rounded text-xs transition-colors ${
-                            isActiveInTimer
-                                ? 'text-sky-400 bg-sky-500/20'
-                                : 'text-slate-500 hover:text-rose-400 hover:bg-slate-800'
-                        }`}
-                        title={isActiveInTimer ? 'Cartão em foco no timer' : 'Focar neste cartão no Pomodoro'}
-                    >
-                        <Flame className="w-4 h-4" />
-                    </button>
+                    {/* Botão Adicionar/Remover da Fila */}
+                    {!isOverlay && !isActive && (
+                        <button
+                            type="button"
+                            onClick={handleToggleQueue}
+                            className={`p-1 rounded text-xs transition-colors ${
+                                isInQueue
+                                    ? 'text-amber-400 bg-amber-500/10'
+                                    : 'text-slate-500 hover:text-amber-400 hover:bg-slate-800 opacity-60 group-hover:opacity-100'
+                            }`}
+                            title={isInQueue ? 'Remover da fila do Pomodoro' : 'Adicionar à fila do Pomodoro'}
+                        >
+                            {isInQueue ? (
+                                <ListCheck className="w-3.5 h-3.5" />
+                            ) : (
+                                <ListPlus className="w-3.5 h-3.5" />
+                            )}
+                        </button>
+                    )}
+
+                    {/* Botão ACIONAR POMODORO DIRETO PELO CARD */}
+                    {!isOverlay && (
+                        <button
+                            type="button"
+                            onClick={handleTimerAction}
+                            className={`p-1.5 rounded-sm text-xs font-semibold flex items-center gap-1 transition-all ${
+                                isActive
+                                    ? isTicking
+                                        ? 'bg-rose-500/20 text-rose-400 border border-rose-500/40 hover:bg-rose-500/30'
+                                        : 'bg-amber-500/20 text-amber-400 border border-amber-500/40 hover:bg-amber-500/30'
+                                    : 'text-slate-400 hover:text-rose-400 hover:bg-slate-800'
+                            }`}
+                            title={
+                                isActive
+                                    ? isTicking
+                                        ? 'Pausar Pomodoro nesta tarefa'
+                                        : 'Retomar Pomodoro nesta tarefa'
+                                    : 'Iniciar foco Pomodoro agora'
+                            }
+                        >
+                            {isActive ? (
+                                isTicking ? (
+                                    <Pause className="w-3.5 h-3.5" />
+                                ) : (
+                                    <Play className="w-3.5 h-3.5" />
+                                )
+                            ) : (
+                                <Flame className="w-3.5 h-3.5" />
+                            )}
+                        </button>
+                    )}
                 </div>
             </div>
 
-            {/* Título com maior destaque e presença visual */}
-            <h4 className="text-[15px] font-medium text-slate-100 leading-snug group-hover:text-white transition-colors">
+            {/* Título com presença nítida */}
+            <h4 className="text-[14.5px] font-medium text-slate-100 leading-snug group-hover:text-white transition-colors">
                 {card.title}
             </h4>
 
@@ -253,7 +366,7 @@ export const CardItem: React.FC<CardItemProps> = ({
 
             {/* Subtarefas */}
             {totalSubtasks > 0 && (
-                <div className="mt-3 space-y-1.5">
+                <div className="mt-2.5 space-y-1">
                     <div className="flex items-center justify-between text-[11px] text-slate-400">
                         <span className="flex items-center gap-1 font-mono">
                             <CheckSquare className="w-3.5 h-3.5 text-slate-500" />
@@ -269,8 +382,8 @@ export const CardItem: React.FC<CardItemProps> = ({
                     </div>
 
                     {/* Preview das subtarefas com clique direto */}
-                    <div className="pt-1 space-y-1">
-                        {card.subtasks.map((st) => (
+                    <div className="pt-1 space-y-0.5">
+                        {card.subtasks.slice(0, 3).map((st) => (
                             <div
                                 key={st.id}
                                 onClick={(e) => toggleSubtask(e, st.id)}
@@ -287,6 +400,11 @@ export const CardItem: React.FC<CardItemProps> = ({
                                 </span>
                             </div>
                         ))}
+                        {card.subtasks.length > 3 && (
+                            <div className="text-[10px] text-slate-500 font-mono pl-5">
+                                + {card.subtasks.length - 3} mais subtarefas
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
@@ -306,7 +424,7 @@ export const CardItem: React.FC<CardItemProps> = ({
                     })()}
                 </div>
 
-                {/* Tempo Gasto / Estimativa (Estilo KanbanFlow Original) */}
+                {/* Tempo Gasto / Estimativa */}
                 {(estimateMinutes > 0 || spentMinutes > 0) && (
                     <span
                         className={`flex items-center gap-1 font-mono text-[11px] px-1.5 py-0.5 rounded border ${
