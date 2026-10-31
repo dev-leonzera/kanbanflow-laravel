@@ -11,7 +11,7 @@ class ChangelogService
      */
     public function getCurrentVersion(): string
     {
-        return (string) config('changelog.current_version', 'v1.4.0');
+        return (string) config('changelog.current_version', 'v1.5.0');
     }
 
     /**

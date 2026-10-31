@@ -39,7 +39,7 @@ export default function Authenticated({
     const [isNewBoardModalOpen, setIsNewBoardModalOpen] = useState(false);
     const [newBoardTitle, setNewBoardTitle] = useState('');
     const [newBoardDescription, setNewBoardDescription] = useState('');
-    const APP_VERSION = app_version || 'v1.4.0';
+    const APP_VERSION = app_version || 'v1.5.0';
     const [isChangelogOpen, setIsChangelogOpen] = useState(Boolean(changelog?.should_show));
 
     useEffect(() => {

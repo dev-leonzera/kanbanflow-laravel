@@ -11,7 +11,7 @@ return [
     | em seu primeiro login ou acesso pós-atualização.
     |
     */
-    'current_version' => 'v1.4.0',
+    'current_version' => 'v1.5.0',
 
     /*
     |--------------------------------------------------------------------------
@@ -23,6 +23,39 @@ return [
     |
     */
     'releases' => [
+        [
+            'version' => 'v1.5.0',
+            'date' => '2026-10-30',
+            'title' => 'Pomodoro Integrado aos Cards, Fila e Esteira Kanban, Modal Interativo e Reordenação de Colunas',
+            'summary' => 'Grande atualização com acionamento do Pomodoro direto pelos cartões, fila de foco com esteira configurável, visualização ergonômica de cards com checklist interativo e reordenação de colunas.',
+            'items' => [
+                [
+                    'type' => 'feature',
+                    'title' => 'Pomodoro Direto no Card e Fila de Foco',
+                    'description' => 'Inicie sessões de Pomodoro com 1 clique direto no cartão ou adicione tarefas à fila sequencial com passagem automática para a próxima ao concluir.',
+                ],
+                [
+                    'type' => 'feature',
+                    'title' => 'Esteira de Trabalho Kanban Customizável',
+                    'description' => 'Defina a coluna padrão de entrada, colunas de trabalho em andamento (WIP) e a coluna de conclusão, com movimentação automática de cartões ao iniciar o timer.',
+                ],
+                [
+                    'type' => 'feature',
+                    'title' => 'Modal de Visualização Interativo com Modo Edição',
+                    'description' => 'Ao clicar em um card, visualize detalhes, prazos e interaja diretamente com o checklist de subtarefas antes de alternar para o modo completo de edição.',
+                ],
+                [
+                    'type' => 'improvement',
+                    'title' => 'Reordenação de Colunas no Quadro',
+                    'description' => 'Reorganize colunas com facilidade usando as setas rápidas no cabeçalho ou arrastando via drag-and-drop com prevenção de conflitos.',
+                ],
+                [
+                    'type' => 'improvement',
+                    'title' => 'Notificações de Pomodoro no Navegador e Alarme Sonoro',
+                    'description' => 'Alertas sonoros sintetizados via Web Audio API e notificações nativas de desktop ao término de cada ciclo de foco ou pausa.',
+                ],
+            ],
+        ],
         [
             'version' => 'v1.4.0',
             'date' => '2026-10-28',

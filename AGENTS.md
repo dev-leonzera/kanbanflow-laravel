@@ -34,6 +34,18 @@ Before relying on a package's API, confirm its installed version:
 
 - You must only create documentation files if explicitly requested by the user.
 
+## Versioning & Changelog
+
+- **Obrigatório após qualquer atualização**: Ao concluir qualquer nova funcionalidade, melhoria ou correção (antes de comitar e fazer o deploy), você DEVE obrigatoriamente atualizar a versão da aplicação e o histórico de changelog.
+- A versão atual e o histórico de lançamentos são centralizados em `config/changelog.php` (podendo ser gerados via `php artisan app:bump-version {version}` ou estruturados diretamente no arquivo).
+- Toda nova versão deve especificar:
+  - `version`: identificador no padrão semântico (ex: `v1.5.0`);
+  - `date`: data da atualização no formato `YYYY-MM-DD`;
+  - `title`: título de destaque resumindo a entrega;
+  - `summary`: síntese executiva das novidades;
+  - `items`: lista de alterações categorizadas por `type` (`feature`, `improvement` ou `fix`), com `title` e `description`.
+- O registro é consumido diretamente pelo `ChangelogService` e pelo componente `ChangelogModal`, notificando automaticamente os usuários no primeiro login após a publicação.
+
 === php rules ===
 
 # PHP
